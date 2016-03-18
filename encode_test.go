@@ -26,6 +26,13 @@ func TestEncode(t *testing.T) {
 			}{"b"},
 			"a\nb\n",
 		},
+		{
+			struct {
+				A string `csv:"-"`
+				B string `csv:"b"`
+			}{"a", "b"},
+			"b\nb\n",
+		},
 	}
 
 	for _, tc := range testcases {
