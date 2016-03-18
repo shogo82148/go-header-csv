@@ -1,10 +1,13 @@
 package headercsv
 
 import (
+	"encoding"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"io"
 	"reflect"
+	"strconv"
 	"sync"
 )
 
@@ -50,12 +53,72 @@ func (enc *Encoder) encodeRecord(v reflect.Value) error {
 	switch rt := rt.(type) {
 	case namedRecordType:
 		for i, k := range enc.header {
-			record[i] = rt.FieldByName(v, k).String()
+			v, opt := rt.FieldByName(v, k)
+			if opt != nil && opt.omitEmpty && isEmptyValue(v) {
+				record[i] = ""
+				continue
+			}
+			s, err := enc.encodeField(v, opt)
+			if err != nil {
+				return err
+			}
+			record[i] = s
 		}
 	default:
 		return errors.New("unsupported type")
 	}
 	return enc.w.Write(record)
+}
+
+// steel from https://golang.org/src/encoding/json/encode.go
+func isEmptyValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		return v.Len() == 0
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.Interface, reflect.Ptr:
+		return v.IsNil()
+	}
+	return false
+}
+
+func (enc *Encoder) encodeField(v reflect.Value, opt *field) (string, error) {
+	if m, ok := v.Interface().(encoding.TextMarshaler); ok {
+		text, err := m.MarshalText()
+		if err != nil {
+			return "", err
+		}
+		return string(text), nil
+	}
+
+	switch v.Kind() {
+	case reflect.String:
+		return v.String(), nil
+	case reflect.Bool:
+		return strconv.FormatBool(v.Bool()), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(v.Int(), 10), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return strconv.FormatUint(v.Uint(), 10), nil
+	case reflect.Float32:
+		return strconv.FormatFloat(v.Float(), 'g', -1, 32), nil
+	case reflect.Float64:
+		return strconv.FormatFloat(v.Float(), 'g', -1, 64), nil
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.Interface, reflect.Ptr, reflect.Struct:
+		j, err := json.Marshal(v.Interface())
+		if err != nil {
+			return "", err
+		}
+		return string(j), nil
+	}
+	return "", errors.New("unsuported type")
 }
 
 func (enc *Encoder) SetHeader(header []string) error {
@@ -71,11 +134,11 @@ func (enc *Encoder) Flush() {
 }
 
 type orderedRecoredType interface {
-	FieldByIndex(v reflect.Value, i int) reflect.Value
+	FieldByIndex(v reflect.Value, i int) (reflect.Value, *field)
 }
 
 type namedRecordType interface {
-	FieldByName(v reflect.Value, name string) reflect.Value
+	FieldByName(v reflect.Value, name string) (reflect.Value, *field)
 	HeaderNames(v reflect.Value) []string
 }
 
@@ -117,8 +180,8 @@ var unsupportedRecordType struct{}
 type mapRecordType struct {
 }
 
-func (rt *mapRecordType) FieldByName(v reflect.Value, name string) reflect.Value {
-	return v.MapIndex(reflect.ValueOf(name))
+func (rt *mapRecordType) FieldByName(v reflect.Value, name string) (reflect.Value, *field) {
+	return v.MapIndex(reflect.ValueOf(name)), nil
 }
 
 func (rt *mapRecordType) HeaderNames(v reflect.Value) []string {
@@ -137,13 +200,19 @@ func newMapRecordType(t reflect.Type) interface{} {
 	return &mapRecordType{}
 }
 
-type structRecordType struct {
-	headers []string
-	index   map[string]int
+type field struct {
+	index     int
+	omitEmpty bool
 }
 
-func (rt *structRecordType) FieldByName(v reflect.Value, name string) reflect.Value {
-	return v.Field(rt.index[name])
+type structRecordType struct {
+	headers []string
+	fields  map[string]*field
+}
+
+func (rt *structRecordType) FieldByName(v reflect.Value, name string) (reflect.Value, *field) {
+	f := rt.fields[name]
+	return v.Field(f.index), f
 }
 
 func (rt *structRecordType) HeaderNames(v reflect.Value) []string {
@@ -153,20 +222,24 @@ func (rt *structRecordType) HeaderNames(v reflect.Value) []string {
 func newStructRecordType(t reflect.Type) interface{} {
 	num := t.NumField()
 	headers := make([]string, 0, num)
-	index := make(map[string]int, num)
+	fields := make(map[string]*field, num)
 	for i := 0; i < num; i++ {
-		name := t.Field(i).Tag.Get("csv")
-		if name == "-" {
+		tag := t.Field(i).Tag.Get("csv")
+		if tag == "-" {
 			continue
 		}
+		name, opts := parseTag(tag)
 		if name == "" {
 			name = t.Field(i).Name
 		}
 		headers = append(headers, name)
-		index[name] = i
+		fields[name] = &field{
+			index:     i,
+			omitEmpty: opts.Contains("omitempty"),
+		}
 	}
 	return &structRecordType{
 		headers: headers,
-		index:   index,
+		fields:  fields,
 	}
 }

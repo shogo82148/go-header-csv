@@ -7,7 +7,18 @@ import (
 	"testing"
 )
 
+type testMarshal int
+
+func (i testMarshal) MarshalText() ([]byte, error) {
+	return []byte("<testMarshal>"), nil
+}
+
 func TestEncode(t *testing.T) {
+	type FooBar struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
 	testcases := []struct {
 		in  interface{}
 		out string
@@ -32,6 +43,43 @@ func TestEncode(t *testing.T) {
 				B string `csv:"b"`
 			}{"a", "b"},
 			"b\nb\n",
+		},
+		{
+			struct {
+				A int `csv:"a"`
+			}{10},
+			"a\n10\n",
+		},
+		{
+			struct {
+				A uint `csv:"a"`
+			}{10},
+			"a\n10\n",
+		},
+		{
+			struct {
+				A float64 `csv:"a"`
+			}{10},
+			"a\n10\n",
+		},
+		{
+			[]struct {
+				A int `csv:"a,omitempty"`
+				B int `csv:"b"`
+			}{{1, 1}, {1, 0}, {0, 1}, {0, 0}},
+			"a,b\n1,1\n1,0\n,1\n,0\n",
+		},
+		{
+			struct {
+				A FooBar
+			}{A: FooBar{"f", "b"}},
+			"A\n" + `"{""foo"":""f"",""bar"":""b""}"` + "\n",
+		},
+		{
+			struct {
+				A testMarshal
+			}{A: 0},
+			"A\n<testMarshal>\n",
 		},
 	}
 
@@ -83,9 +131,9 @@ func TestNamedRecordType(t *testing.T) {
 
 		// Test FieldByName
 		for k, v := range tc.out {
-			got := rt.FieldByName(in, k).String()
-			if got != v {
-				t.Errorf("incorrect value: got %v, expected %v", got, v)
+			got, _ := rt.FieldByName(in, k)
+			if got.String() != v {
+				t.Errorf("incorrect value: got %v, expected %v", got.String(), v)
 			}
 		}
 
