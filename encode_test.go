@@ -20,6 +20,12 @@ func TestEncode(t *testing.T) {
 			struct{ A string }{"b"},
 			"A\nb\n",
 		},
+		{
+			struct {
+				A string `csv:"a"`
+			}{"b"},
+			"a\nb\n",
+		},
 	}
 
 	for _, tc := range testcases {
@@ -52,6 +58,14 @@ func TestNamedRecordType(t *testing.T) {
 			in:      struct{ A string }{"b"},
 			out:     map[string]string{"A": "b"},
 			headers: []string{"A"},
+			ordered: false,
+		},
+		{
+			in: struct {
+				A string `csv:"a"`
+			}{"b"},
+			out:     map[string]string{"a": "b"},
+			headers: []string{"a"},
 			ordered: false,
 		},
 	}

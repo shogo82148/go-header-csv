@@ -155,7 +155,13 @@ func newStructRecordType(t reflect.Type) interface{} {
 	headers := make([]string, 0, num)
 	index := make(map[string]int, num)
 	for i := 0; i < num; i++ {
-		name := t.Field(i).Name
+		name := t.Field(i).Tag.Get("csv")
+		if name == "-" {
+			continue
+		}
+		if name == "" {
+			name = t.Field(i).Name
+		}
 		headers = append(headers, name)
 		index[name] = i
 	}
