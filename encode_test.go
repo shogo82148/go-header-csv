@@ -81,6 +81,12 @@ func TestEncode(t *testing.T) {
 			}{A: 0},
 			"A\n<testMarshal>\n",
 		},
+		{
+			struct {
+				A *string `csv:"a"`
+			}{new(string)},
+			"a\n\n",
+		},
 	}
 
 	for _, tc := range testcases {

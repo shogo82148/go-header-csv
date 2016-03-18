@@ -111,7 +111,12 @@ func (enc *Encoder) encodeField(v reflect.Value, opt *field) (string, error) {
 		return strconv.FormatFloat(v.Float(), 'g', -1, 32), nil
 	case reflect.Float64:
 		return strconv.FormatFloat(v.Float(), 'g', -1, 64), nil
-	case reflect.Array, reflect.Map, reflect.Slice, reflect.Interface, reflect.Ptr, reflect.Struct:
+	case reflect.Ptr:
+		if v.IsNil() {
+			return "null", nil
+		}
+		return enc.encodeField(v.Elem(), opt)
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.Interface, reflect.Struct:
 		j, err := json.Marshal(v.Interface())
 		if err != nil {
 			return "", err
