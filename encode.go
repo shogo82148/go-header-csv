@@ -1,6 +1,8 @@
 package headercsv
 
 import (
+	"encoding/csv"
+	"errors"
 	"io"
 	"reflect"
 	"sync"
@@ -8,15 +10,64 @@ import (
 
 type Encoder struct {
 	header []string
-	w      io.Writer
+	w      *csv.Writer
 }
 
 func NewEncoder(w io.Writer) *Encoder {
-	return &Encoder{w: w}
+	return &Encoder{w: csv.NewWriter(w)}
 }
 
 func (enc *Encoder) Encode(v interface{}) error {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Array && rv.Kind() != reflect.Slice {
+		return enc.encodeRecord(rv)
+	}
+
+	for i := 0; i < rv.Len(); i++ {
+		err := enc.encodeRecord(rv.Index(i))
+		if err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func (enc *Encoder) encodeRecord(v reflect.Value) error {
+	rt := recordType(v.Type())
+	if enc.header == nil {
+		// guess header
+		named := rt.(namedRecordType)
+		if named == nil {
+			return errors.New("cannot decide header")
+		}
+		if err := enc.SetHeader(named.HeaderNames(v)); err != nil {
+			return err
+		}
+	}
+
+	// fill record
+	record := make([]string, len(enc.header))
+	switch rt := rt.(type) {
+	case namedRecordType:
+		for i, k := range enc.header {
+			record[i] = rt.FieldByName(v, k).String()
+		}
+	default:
+		return errors.New("unsupported type")
+	}
+	return enc.w.Write(record)
+}
+
+func (enc *Encoder) SetHeader(header []string) error {
+	if enc.header != nil {
+		return errors.New("header has been alread set")
+	}
+	enc.header = header
+	return enc.w.Write(header)
+}
+
+func (enc *Encoder) Flush() {
+	enc.w.Flush()
 }
 
 type orderedRecoredType interface {
@@ -55,6 +106,8 @@ func newRecordType(t reflect.Type) interface{} {
 	switch t.Kind() {
 	case reflect.Map:
 		return newMapRecordType(t)
+	case reflect.Struct:
+		return newStructRecordType(t)
 	}
 	return nil
 }
@@ -82,4 +135,32 @@ func newMapRecordType(t reflect.Type) interface{} {
 		return unsupportedRecordType
 	}
 	return &mapRecordType{}
+}
+
+type structRecordType struct {
+	headers []string
+	index   map[string]int
+}
+
+func (rt *structRecordType) FieldByName(v reflect.Value, name string) reflect.Value {
+	return v.Field(rt.index[name])
+}
+
+func (rt *structRecordType) HeaderNames(v reflect.Value) []string {
+	return rt.headers
+}
+
+func newStructRecordType(t reflect.Type) interface{} {
+	num := t.NumField()
+	headers := make([]string, 0, num)
+	index := make(map[string]int, num)
+	for i := 0; i < num; i++ {
+		name := t.Field(i).Name
+		headers = append(headers, name)
+		index[name] = i
+	}
+	return &structRecordType{
+		headers: headers,
+		index:   index,
+	}
 }
