@@ -87,6 +87,12 @@ func TestEncode(t *testing.T) {
 			}{new(string)},
 			"a\n\n",
 		},
+		{
+			&struct {
+				A string `csv:"a"`
+			}{"b"},
+			"a\nb\n",
+		},
 	}
 
 	for _, tc := range testcases {

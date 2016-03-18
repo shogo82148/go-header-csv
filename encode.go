@@ -176,6 +176,8 @@ func newRecordType(t reflect.Type) interface{} {
 		return newMapRecordType(t)
 	case reflect.Struct:
 		return newStructRecordType(t)
+	case reflect.Ptr:
+		return newPtrRecordType(t)
 	}
 	return nil
 }
@@ -247,4 +249,26 @@ func newStructRecordType(t reflect.Type) interface{} {
 		headers: headers,
 		fields:  fields,
 	}
+}
+
+type namedPtrRecordType struct {
+	elem namedRecordType
+}
+
+func (rt *namedPtrRecordType) FieldByName(v reflect.Value, name string) (reflect.Value, *field) {
+	return rt.elem.FieldByName(v.Elem(), name)
+}
+
+func (rt *namedPtrRecordType) HeaderNames(v reflect.Value) []string {
+	return rt.elem.HeaderNames(v.Elem())
+}
+
+func newPtrRecordType(t reflect.Type) interface{} {
+	elem := recordType(t.Elem())
+	if e, ok := elem.(namedRecordType); ok {
+		return &namedPtrRecordType{
+			elem: e,
+		}
+	}
+	return unsupportedRecordType
 }
