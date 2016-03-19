@@ -119,6 +119,8 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 		v.SetFloat(n)
 	case reflect.String:
 		v.SetString(field)
+	case reflect.Interface:
+		v.Set(reflect.ValueOf(field))
 	}
 	return nil
 }

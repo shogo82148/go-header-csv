@@ -26,6 +26,10 @@ type ATag struct {
 	A string `csv:"a"`
 }
 
+type AInterface struct {
+	A interface{} `csv:"a"`
+}
+
 func TestDecode(t *testing.T) {
 	testcases := []struct {
 		in  string
@@ -58,6 +62,11 @@ func TestDecode(t *testing.T) {
 			new(ATag),
 			&ATag{A: "b"},
 		},
+		{
+			"a\nhoge\n",
+			new(AInterface),
+			&AInterface{A: "hoge"},
+		},
 
 		// map
 		{
@@ -69,6 +78,11 @@ func TestDecode(t *testing.T) {
 			"a\n123\n",
 			map[string]int{},
 			map[string]int{"a": 123},
+		},
+		{
+			"a\nb\n",
+			map[string]interface{}{},
+			map[string]interface{}{"a": "b"},
 		},
 	}
 
