@@ -27,6 +27,18 @@ func (dec *Decoder) Decode(v interface{}) error {
 	}
 
 	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Ptr && rv.Elem().Kind() == reflect.Array {
+		elem := rv.Elem()
+		l := elem.Len()
+		for i := 0; i < l; i++ {
+			ev := elem.Index(i)
+			if err := dec.decodeRecord(ev); err != nil {
+				ev.Set(reflect.Zero(ev.Type()))
+				return err
+			}
+		}
+	}
+
 	return dec.decodeRecord(rv)
 }
 
@@ -39,6 +51,7 @@ func (dec *Decoder) SetHeader(header []string) error {
 }
 
 func (dec *Decoder) decodeRecord(v reflect.Value) error {
+	v = dec.indirect(v)
 	record, err := dec.r.Read()
 	if err != nil {
 		return err
@@ -83,6 +96,9 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 }
 
 func (dec *Decoder) decodeField(v reflect.Value, field string) error {
+	if !v.CanSet() {
+		return nil
+	}
 	switch v.Kind() {
 	case reflect.Bool:
 		b, err := strconv.ParseBool(field)
@@ -123,4 +139,20 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 		v.Set(reflect.ValueOf(field))
 	}
 	return nil
+}
+
+func (dec *Decoder) indirect(v reflect.Value) reflect.Value {
+	if v.Kind() != reflect.Ptr && v.Type().Name() != "" && v.CanAddr() {
+		v = v.Addr()
+	}
+	for {
+		if v.Kind() != reflect.Ptr {
+			break
+		}
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+		v = v.Elem()
+	}
+	return v
 }

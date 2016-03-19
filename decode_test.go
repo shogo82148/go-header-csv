@@ -2,6 +2,7 @@ package headercsv
 
 import (
 	"bytes"
+	"io"
 	"reflect"
 	"testing"
 )
@@ -68,6 +69,18 @@ func TestDecode(t *testing.T) {
 			&AInterface{A: "hoge"},
 		},
 
+		// array of struct
+		{
+			"A\nhoge\nfuga\n",
+			new([3]AString),
+			&[3]AString{{"hoge"}, {"fuga"}, {""}},
+		},
+		{
+			"A\nhoge\nfuga\n",
+			new([3]*AString),
+			&[3]*AString{{"hoge"}, {"fuga"}, nil},
+		},
+
 		// map
 		{
 			"a\nb\n",
@@ -88,7 +101,7 @@ func TestDecode(t *testing.T) {
 
 	for _, tc := range testcases {
 		d := NewDecoder(bytes.NewBufferString(tc.in))
-		if err := d.Decode(tc.ptr); err != nil {
+		if err := d.Decode(tc.ptr); err != nil && err != io.EOF {
 			t.Errorf("unexpected error: %v(%v)", err, tc)
 		}
 		if !reflect.DeepEqual(tc.ptr, tc.out) {
