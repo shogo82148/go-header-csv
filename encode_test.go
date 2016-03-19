@@ -93,6 +93,52 @@ func TestEncode(t *testing.T) {
 			}{"b"},
 			"a\nb\n",
 		},
+
+		// struct and (slice or array)
+		{
+			[]interface{}{
+				struct {
+					A string `csv:"a"`
+					B string `csv:"b"`
+					C string `csv:"c"`
+				}{"this", "is", "struct"},
+				[]string{"this", "is", "slice"},
+			},
+			"a,b,c\nthis,is,struct\nthis,is,slice\n",
+		},
+		{
+			[]interface{}{
+				struct {
+					A string `csv:"a"`
+					B string `csv:"b"`
+					C string `csv:"c"`
+				}{"this", "is", "struct"},
+				&[]string{"this", "is", "slice"},
+			},
+			"a,b,c\nthis,is,struct\nthis,is,slice\n",
+		},
+		{
+			[]interface{}{
+				struct {
+					A string `csv:"a"`
+					B string `csv:"b"`
+					C string `csv:"c"`
+				}{"this", "is", "struct"},
+				[3]string{"this", "is", "slice"},
+			},
+			"a,b,c\nthis,is,struct\nthis,is,slice\n",
+		},
+		{
+			[]interface{}{
+				struct {
+					A string `csv:"a"`
+					B string `csv:"b"`
+					C string `csv:"c"`
+				}{"this", "is", "struct"},
+				&[3]string{"this", "is", "slice"},
+			},
+			"a,b,c\nthis,is,struct\nthis,is,slice\n",
+		},
 	}
 
 	for _, tc := range testcases {

@@ -36,6 +36,9 @@ func (enc *Encoder) Encode(v interface{}) error {
 }
 
 func (enc *Encoder) encodeRecord(v reflect.Value) error {
+	if v.Kind() == reflect.Interface {
+		v = v.Elem()
+	}
 	rt := recordType(v.Type())
 	if enc.header == nil {
 		// guess header
@@ -59,6 +62,15 @@ func (enc *Encoder) encodeRecord(v reflect.Value) error {
 				continue
 			}
 			s, err := enc.encodeField(v, opt)
+			if err != nil {
+				return err
+			}
+			record[i] = s
+		}
+	case orderedRecoredType:
+		for i := range enc.header {
+			v, _ := rt.FieldByIndex(v, i)
+			s, err := enc.encodeField(v, nil)
 			if err != nil {
 				return err
 			}
@@ -178,6 +190,8 @@ func newRecordType(t reflect.Type) interface{} {
 		return newStructRecordType(t)
 	case reflect.Ptr:
 		return newPtrRecordType(t)
+	case reflect.Slice, reflect.Array:
+		return newSliceRecordType(t)
 	}
 	return nil
 }
@@ -263,12 +277,42 @@ func (rt *namedPtrRecordType) HeaderNames(v reflect.Value) []string {
 	return rt.elem.HeaderNames(v.Elem())
 }
 
+type orderedPtrRecordType struct {
+	elem orderedRecoredType
+}
+
+func (rt *orderedPtrRecordType) FieldByIndex(v reflect.Value, i int) (reflect.Value, *field) {
+	return rt.elem.FieldByIndex(v.Elem(), i)
+}
+
 func newPtrRecordType(t reflect.Type) interface{} {
 	elem := recordType(t.Elem())
-	if e, ok := elem.(namedRecordType); ok {
+	switch elem := elem.(type) {
+	case namedRecordType:
 		return &namedPtrRecordType{
-			elem: e,
+			elem: elem,
+		}
+	case orderedRecoredType:
+		return &orderedPtrRecordType{
+			elem: elem,
 		}
 	}
 	return unsupportedRecordType
+}
+
+type sliceRecordType struct {
+	zero reflect.Value
+}
+
+func (rt *sliceRecordType) FieldByIndex(v reflect.Value, i int) (reflect.Value, *field) {
+	if i >= v.Len() {
+		return rt.zero, nil
+	}
+	return v.Index(i), nil
+}
+
+func newSliceRecordType(t reflect.Type) interface{} {
+	return &sliceRecordType{
+		zero: reflect.Zero(t.Elem()),
+	}
 }
