@@ -2,6 +2,7 @@ package headercsv
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"io"
 	"reflect"
@@ -150,6 +151,10 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 		v.SetString(field)
 	case reflect.Interface:
 		v.Set(reflect.ValueOf(field))
+	default:
+		if v.CanAddr() {
+			json.Unmarshal([]byte(field), v.Addr().Interface())
+		}
 	}
 	return nil
 }

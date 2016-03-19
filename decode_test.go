@@ -31,6 +31,10 @@ type AInterface struct {
 	A interface{} `csv:"a"`
 }
 
+type AStruct struct {
+	A AString `csv:"a"`
+}
+
 func TestDecode(t *testing.T) {
 	testcases := []struct {
 		in  string
@@ -108,6 +112,18 @@ func TestDecode(t *testing.T) {
 			"a\nb\n",
 			map[string]interface{}{},
 			map[string]interface{}{"a": "b"},
+		},
+
+		// nested struct
+		{
+			"a\n" + `"{""a"":""hoge""}"` + "\n",
+			new(AStruct),
+			&AStruct{A: AString{A: "hoge"}},
+		},
+		{
+			"a\n" + `"{""a"":""hoge""}"` + "\n",
+			map[string]AString{},
+			map[string]AString{"a": AString{A: "hoge"}},
 		},
 	}
 
