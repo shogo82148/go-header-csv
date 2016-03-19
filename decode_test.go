@@ -58,6 +58,18 @@ func TestDecode(t *testing.T) {
 			new(ATag),
 			&ATag{A: "b"},
 		},
+
+		// map
+		{
+			"a\nb\n",
+			map[string]string{},
+			map[string]string{"a": "b"},
+		},
+		{
+			"a\n123\n",
+			map[string]int{},
+			map[string]int{"a": 123},
+		},
 	}
 
 	for _, tc := range testcases {

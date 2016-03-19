@@ -44,12 +44,36 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 		return err
 	}
 
-	rt := recordType(v.Type())
+	t := v.Type()
+	if v.Kind() == reflect.Map {
+		if t.Key().Kind() != reflect.String {
+			return errors.New("unsupported type")
+		}
+		elemType := v.Type().Elem()
+		for i, k := range dec.header {
+			if i >= len(record) {
+				break
+			}
+			elem := reflect.New(elemType).Elem()
+			if err := dec.decodeField(elem, record[i]); err != nil {
+				return err
+			}
+			v.SetMapIndex(reflect.ValueOf(k), elem)
+		}
+		return nil
+	}
+
+	rt := recordType(t)
 	switch rt := rt.(type) {
 	case namedRecordType:
 		for i, k := range dec.header {
+			if i >= len(record) {
+				break
+			}
 			v, _ := rt.FieldByName(v, k)
-			dec.decodeField(v, record[i])
+			if err := dec.decodeField(v, record[i]); err != nil {
+				return err
+			}
 		}
 	default:
 		return errors.New("unsupported type")
