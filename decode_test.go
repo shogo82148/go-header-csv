@@ -125,6 +125,18 @@ func TestDecode(t *testing.T) {
 			map[string]AString{},
 			map[string]AString{"a": AString{A: "hoge"}},
 		},
+
+		// slice of slice
+		{
+			"a,b,c\n1,2,3\n4,5,6\n",
+			new([][]string),
+			&[][]string{{"1", "2", "3"}, {"4", "5", "6"}},
+		},
+		{
+			"a,b,c\n1,2,3\n4,5,6\n",
+			new([][3]string),
+			&[][3]string{{"1", "2", "3"}, {"4", "5", "6"}},
+		},
 	}
 
 	for _, tc := range testcases {

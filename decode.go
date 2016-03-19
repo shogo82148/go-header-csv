@@ -90,6 +90,10 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 		return nil
 	}
 
+	if v.Kind() == reflect.Slice {
+		v.Set(reflect.MakeSlice(v.Type(), len(dec.header), len(dec.header)))
+	}
+
 	rt := recordType(t)
 	for i, k := range dec.header {
 		if i >= len(record) {
