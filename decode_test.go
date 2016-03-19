@@ -69,6 +69,13 @@ func TestDecode(t *testing.T) {
 			&AInterface{A: "hoge"},
 		},
 
+		// slice of struct
+		{
+			"A\nhoge\nfuga",
+			new([]AString),
+			&[]AString{{"hoge"}, {"fuga"}},
+		},
+
 		// array of struct
 		{
 			"A\nhoge\nfuga\n",

@@ -27,6 +27,19 @@ func (dec *Decoder) Decode(v interface{}) error {
 	}
 
 	rv := reflect.ValueOf(v)
+
+	if rv.Kind() == reflect.Ptr && rv.Elem().Kind() == reflect.Slice {
+		elem := reflect.MakeSlice(rv.Elem().Type(), 0, 4)
+		for {
+			ev := reflect.New(elem.Type().Elem())
+			if err := dec.decodeRecord(ev); err != nil {
+				rv.Elem().Set(elem)
+				return err
+			}
+			elem = reflect.Append(elem, ev.Elem())
+		}
+	}
+
 	if rv.Kind() == reflect.Ptr && rv.Elem().Kind() == reflect.Array {
 		elem := rv.Elem()
 		l := elem.Len()
