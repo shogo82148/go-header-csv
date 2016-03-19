@@ -91,19 +91,14 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 	}
 
 	rt := recordType(t)
-	switch rt := rt.(type) {
-	case namedRecordType:
-		for i, k := range dec.header {
-			if i >= len(record) {
-				break
-			}
-			v, _ := rt.FieldByName(v, k)
-			if err := dec.decodeField(v, record[i]); err != nil {
-				return err
-			}
+	for i, k := range dec.header {
+		if i >= len(record) {
+			break
 		}
-	default:
-		return errors.New("unsupported type")
+		v, _ := rt.Field(v, i, k)
+		if err := dec.decodeField(v, record[i]); err != nil {
+			return err
+		}
 	}
 
 	return nil

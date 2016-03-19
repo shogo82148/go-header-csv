@@ -42,42 +42,28 @@ func (enc *Encoder) encodeRecord(v reflect.Value) error {
 	rt := recordType(v.Type())
 	if enc.header == nil {
 		// guess header
-		named := rt.(namedRecordType)
-		if named == nil {
+		header := rt.HeaderNames(v)
+		if header == nil {
 			return errors.New("cannot decide header")
 		}
-		if err := enc.SetHeader(named.HeaderNames(v)); err != nil {
+		if err := enc.SetHeader(header); err != nil {
 			return err
 		}
 	}
 
 	// fill record
 	record := make([]string, len(enc.header))
-	switch rt := rt.(type) {
-	case namedRecordType:
-		for i, k := range enc.header {
-			v, opt := rt.FieldByName(v, k)
-			if opt != nil && opt.omitEmpty && isEmptyValue(v) {
-				record[i] = ""
-				continue
-			}
-			s, err := enc.encodeField(v, opt)
-			if err != nil {
-				return err
-			}
-			record[i] = s
+	for i, k := range enc.header {
+		v, opt := rt.Field(v, i, k)
+		if opt != nil && opt.omitEmpty && isEmptyValue(v) {
+			record[i] = ""
+			continue
 		}
-	case orderedRecoredType:
-		for i := range enc.header {
-			v, _ := rt.FieldByIndex(v, i)
-			s, err := enc.encodeField(v, nil)
-			if err != nil {
-				return err
-			}
-			record[i] = s
+		s, err := enc.encodeField(v, opt)
+		if err != nil {
+			return err
 		}
-	default:
-		return errors.New("unsupported type")
+		record[i] = s
 	}
 	return enc.w.Write(record)
 }
@@ -150,21 +136,17 @@ func (enc *Encoder) Flush() {
 	enc.w.Flush()
 }
 
-type orderedRecoredType interface {
-	FieldByIndex(v reflect.Value, i int) (reflect.Value, *field)
-}
-
-type namedRecordType interface {
-	FieldByName(v reflect.Value, name string) (reflect.Value, *field)
+type recordInterface interface {
+	Field(v reflect.Value, i int, name string) (reflect.Value, *field)
 	HeaderNames(v reflect.Value) []string
 }
 
 var recordTypeCache struct {
 	sync.RWMutex
-	m map[reflect.Type]interface{}
+	m map[reflect.Type]recordInterface
 }
 
-func recordType(t reflect.Type) interface{} {
+func recordType(t reflect.Type) recordInterface {
 	recordTypeCache.RLock()
 	f := recordTypeCache.m[t]
 	recordTypeCache.RUnlock()
@@ -175,14 +157,14 @@ func recordType(t reflect.Type) interface{} {
 	f = newRecordType(t)
 	recordTypeCache.Lock()
 	if recordTypeCache.m == nil {
-		recordTypeCache.m = map[reflect.Type]interface{}{}
+		recordTypeCache.m = map[reflect.Type]recordInterface{}
 	}
 	recordTypeCache.m[t] = f
 	recordTypeCache.Unlock()
 	return f
 }
 
-func newRecordType(t reflect.Type) interface{} {
+func newRecordType(t reflect.Type) recordInterface {
 	switch t.Kind() {
 	case reflect.Map:
 		return newMapRecordType(t)
@@ -196,12 +178,20 @@ func newRecordType(t reflect.Type) interface{} {
 	return nil
 }
 
-var unsupportedRecordType struct{}
+type unsupportedRecordType struct{}
+
+func (rt *unsupportedRecordType) Field(v reflect.Value, i int, name string) (reflect.Value, *field) {
+	return reflect.Zero(v.Type()), nil
+}
+
+func (rt *unsupportedRecordType) HeaderNames(v reflect.Value) []string {
+	return nil
+}
 
 type mapRecordType struct {
 }
 
-func (rt *mapRecordType) FieldByName(v reflect.Value, name string) (reflect.Value, *field) {
+func (rt *mapRecordType) Field(v reflect.Value, i int, name string) (reflect.Value, *field) {
 	return v.MapIndex(reflect.ValueOf(name)), nil
 }
 
@@ -214,9 +204,9 @@ func (rt *mapRecordType) HeaderNames(v reflect.Value) []string {
 	return keys
 }
 
-func newMapRecordType(t reflect.Type) interface{} {
+func newMapRecordType(t reflect.Type) recordInterface {
 	if t.Key().Kind() != reflect.String {
-		return unsupportedRecordType
+		return &unsupportedRecordType{}
 	}
 	return &mapRecordType{}
 }
@@ -231,7 +221,7 @@ type structRecordType struct {
 	fields  map[string]*field
 }
 
-func (rt *structRecordType) FieldByName(v reflect.Value, name string) (reflect.Value, *field) {
+func (rt *structRecordType) Field(v reflect.Value, i int, name string) (reflect.Value, *field) {
 	f := rt.fields[name]
 	return v.Field(f.index), f
 }
@@ -240,7 +230,7 @@ func (rt *structRecordType) HeaderNames(v reflect.Value) []string {
 	return rt.headers
 }
 
-func newStructRecordType(t reflect.Type) interface{} {
+func newStructRecordType(t reflect.Type) recordInterface {
 	num := t.NumField()
 	headers := make([]string, 0, num)
 	fields := make(map[string]*field, num)
@@ -265,54 +255,39 @@ func newStructRecordType(t reflect.Type) interface{} {
 	}
 }
 
-type namedPtrRecordType struct {
-	elem namedRecordType
+type ptrRecordType struct {
+	elem recordInterface
 }
 
-func (rt *namedPtrRecordType) FieldByName(v reflect.Value, name string) (reflect.Value, *field) {
-	return rt.elem.FieldByName(v.Elem(), name)
+func (rt *ptrRecordType) Field(v reflect.Value, i int, name string) (reflect.Value, *field) {
+	return rt.elem.Field(v.Elem(), i, name)
 }
 
-func (rt *namedPtrRecordType) HeaderNames(v reflect.Value) []string {
+func (rt *ptrRecordType) HeaderNames(v reflect.Value) []string {
 	return rt.elem.HeaderNames(v.Elem())
 }
 
-type orderedPtrRecordType struct {
-	elem orderedRecoredType
-}
-
-func (rt *orderedPtrRecordType) FieldByIndex(v reflect.Value, i int) (reflect.Value, *field) {
-	return rt.elem.FieldByIndex(v.Elem(), i)
-}
-
-func newPtrRecordType(t reflect.Type) interface{} {
+func newPtrRecordType(t reflect.Type) recordInterface {
 	elem := recordType(t.Elem())
-	switch elem := elem.(type) {
-	case namedRecordType:
-		return &namedPtrRecordType{
-			elem: elem,
-		}
-	case orderedRecoredType:
-		return &orderedPtrRecordType{
-			elem: elem,
-		}
+	return &ptrRecordType{
+		elem: elem,
 	}
-	return unsupportedRecordType
 }
 
 type sliceRecordType struct {
-	zero reflect.Value
 }
 
-func (rt *sliceRecordType) FieldByIndex(v reflect.Value, i int) (reflect.Value, *field) {
+func (rt *sliceRecordType) Field(v reflect.Value, i int, name string) (reflect.Value, *field) {
 	if i >= v.Len() {
-		return rt.zero, nil
+		return reflect.Zero(v.Type().Elem()), nil
 	}
 	return v.Index(i), nil
 }
 
-func newSliceRecordType(t reflect.Type) interface{} {
-	return &sliceRecordType{
-		zero: reflect.Zero(t.Elem()),
-	}
+func (rt *sliceRecordType) HeaderNames(v reflect.Value) []string {
+	return nil
+}
+
+func newSliceRecordType(t reflect.Type) recordInterface {
+	return &sliceRecordType{}
 }

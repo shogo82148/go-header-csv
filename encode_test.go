@@ -185,11 +185,11 @@ func TestNamedRecordType(t *testing.T) {
 
 	for _, tc := range testcases {
 		in := reflect.ValueOf(tc.in)
-		rt := recordType(reflect.TypeOf(tc.in)).(namedRecordType)
+		rt := recordType(reflect.TypeOf(tc.in))
 
 		// Test FieldByName
 		for k, v := range tc.out {
-			got, _ := rt.FieldByName(in, k)
+			got, _ := rt.Field(in, 0, k)
 			if got.String() != v {
 				t.Errorf("incorrect value: got %v, expected %v", got.String(), v)
 			}
