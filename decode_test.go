@@ -75,6 +75,11 @@ func TestDecode(t *testing.T) {
 			new([]AString),
 			&[]AString{{"hoge"}, {"fuga"}},
 		},
+		{
+			"A\nhoge\nfuga",
+			new([]*AString),
+			&[]*AString{{"hoge"}, {"fuga"}},
+		},
 
 		// array of struct
 		{
