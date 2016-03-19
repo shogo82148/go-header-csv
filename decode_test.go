@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -33,6 +34,25 @@ type AInterface struct {
 
 type AStruct struct {
 	A AString `csv:"a"`
+}
+
+type APtr struct {
+	A *string
+	B string
+}
+
+func ptrstr(s string) *string { return &s }
+
+type testUnmarshal int
+
+func (t *testUnmarshal) UnmarshalText(data []byte) error {
+	// decode hex number
+	i, err := strconv.ParseInt(string(data), 16, 0)
+	if err != nil {
+		return err
+	}
+	*t = testUnmarshal(i)
+	return nil
 }
 
 func TestDecode(t *testing.T) {
@@ -97,6 +117,13 @@ func TestDecode(t *testing.T) {
 			&[3]*AString{{"hoge"}, {"fuga"}, nil},
 		},
 
+		// pointer
+		{
+			"A,B\na,b\n,b\na,\n",
+			new([]*APtr),
+			&[]*APtr{{ptrstr("a"), "b"}, {nil, "b"}, {ptrstr("a"), ""}},
+		},
+
 		// map
 		{
 			"a\nb\n",
@@ -137,6 +164,13 @@ func TestDecode(t *testing.T) {
 			new([][3]string),
 			&[][3]string{{"1", "2", "3"}, {"4", "5", "6"}},
 		},
+
+		// TextUnmarshaler
+		{
+			"a\nA\n",
+			map[string]testUnmarshal{},
+			map[string]testUnmarshal{"a": 10},
+		},
 	}
 
 	for _, tc := range testcases {
@@ -145,7 +179,7 @@ func TestDecode(t *testing.T) {
 			t.Errorf("unexpected error: %v(%v)", err, tc)
 		}
 		if !reflect.DeepEqual(tc.ptr, tc.out) {
-			t.Errorf("%#v: got %v, want %v", tc.in, tc.ptr, tc.out)
+			t.Errorf("%#v: got %#v, want %#v", tc.in, tc.ptr, tc.out)
 		}
 	}
 }

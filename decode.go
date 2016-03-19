@@ -1,6 +1,7 @@
 package headercsv
 
 import (
+	"encoding"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -109,6 +110,14 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 }
 
 func (dec *Decoder) decodeField(v reflect.Value, field string) error {
+	if field == "" && v.Kind() == reflect.Ptr {
+		v.Set(reflect.Zero(v.Type()))
+		return nil
+	}
+	u, v := dec.indirectField(v)
+	if u != nil {
+		return u.UnmarshalText([]byte(field))
+	}
 	if !v.CanSet() {
 		return nil
 	}
@@ -172,4 +181,25 @@ func (dec *Decoder) indirect(v reflect.Value) reflect.Value {
 		v = v.Elem()
 	}
 	return v
+}
+
+func (dec *Decoder) indirectField(v reflect.Value) (encoding.TextUnmarshaler, reflect.Value) {
+	if v.Kind() != reflect.Ptr && v.Type().Name() != "" && v.CanAddr() {
+		v = v.Addr()
+	}
+	for {
+		if v.Kind() != reflect.Ptr {
+			break
+		}
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+		if v.Type().NumMethod() > 0 {
+			if u, ok := v.Interface().(encoding.TextUnmarshaler); ok {
+				return u, reflect.Value{}
+			}
+		}
+		v = v.Elem()
+	}
+	return nil, v
 }
