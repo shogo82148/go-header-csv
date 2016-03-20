@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+
+	"gopkg.in/yaml.v1"
 )
 
 type testMarshal int
@@ -204,5 +206,21 @@ func TestNamedRecordType(t *testing.T) {
 		if !reflect.DeepEqual(headers, tc.headers) {
 			t.Errorf("incorrect header: got %s, expected %v", headers, tc.headers)
 		}
+	}
+}
+
+func TestEncode_YAML(t *testing.T) {
+	in := struct {
+		A map[string]string
+	}{
+		A: map[string]string{"foo": "a"},
+	}
+	buf := &bytes.Buffer{}
+	enc := NewEncoder(buf)
+	enc.MarshalField = yaml.Marshal
+	enc.Encode(in)
+	enc.Flush()
+	if got, want := buf.String(), "A\n\"foo: a\n\"\n"; got != want {
+		t.Errorf("got %#v, want %#v", got, want)
 	}
 }

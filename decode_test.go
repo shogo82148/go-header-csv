@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+
+	"gopkg.in/yaml.v1"
 )
 
 type AString struct {
@@ -34,6 +36,10 @@ type AInterface struct {
 
 type AStruct struct {
 	A AString `csv:"a"`
+}
+
+type AMap struct {
+	A map[string]string `csv:"a"`
 }
 
 type APtr struct {
@@ -152,6 +158,11 @@ func TestDecode(t *testing.T) {
 			map[string]AString{},
 			map[string]AString{"a": AString{A: "hoge"}},
 		},
+		{
+			"a\n" + `"{""a"":""hoge""}"` + "\n",
+			new(AMap),
+			&AMap{A: map[string]string{"a": "hoge"}},
+		},
 
 		// slice of slice
 		{
@@ -181,5 +192,24 @@ func TestDecode(t *testing.T) {
 		if !reflect.DeepEqual(tc.ptr, tc.out) {
 			t.Errorf("%#v: got %#v, want %#v", tc.in, tc.ptr, tc.out)
 		}
+	}
+}
+
+func TestDecode_YAML(t *testing.T) {
+	type T struct {
+		A map[string]string `csv:"a"`
+	}
+	in := `a
+"{foo: a, bar: b}"
+`
+	v := new(T)
+	dec := NewDecoder(bytes.NewBufferString(in))
+	dec.UnmarshalField = yaml.Unmarshal
+	if err := dec.Decode(v); err != nil && err != io.EOF {
+		t.Error("unexpected error:", err)
+	}
+	want := &T{map[string]string{"foo": "a", "bar": "b"}}
+	if !reflect.DeepEqual(v, want) {
+		t.Errorf("want %#v, got %#v", want, v)
 	}
 }

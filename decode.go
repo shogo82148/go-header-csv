@@ -11,6 +11,8 @@ import (
 )
 
 type Decoder struct {
+	UnmarshalField func(in []byte, out interface{}) error
+
 	header []string
 	r      *csv.Reader
 }
@@ -20,6 +22,10 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 func (dec *Decoder) Decode(v interface{}) error {
+	if dec.UnmarshalField == nil {
+		dec.UnmarshalField = json.Unmarshal
+	}
+
 	if dec.header == nil {
 		record, err := dec.r.Read()
 		if err != nil {
@@ -161,7 +167,7 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 		v.Set(reflect.ValueOf(field))
 	default:
 		if v.CanAddr() {
-			json.Unmarshal([]byte(field), v.Addr().Interface())
+			return dec.UnmarshalField([]byte(field), v.Addr().Interface())
 		}
 	}
 	return nil

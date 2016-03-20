@@ -12,6 +12,8 @@ import (
 )
 
 type Encoder struct {
+	MarshalField func(v interface{}) ([]byte, error)
+
 	header []string
 	w      *csv.Writer
 }
@@ -21,6 +23,10 @@ func NewEncoder(w io.Writer) *Encoder {
 }
 
 func (enc *Encoder) Encode(v interface{}) error {
+	if enc.MarshalField == nil {
+		enc.MarshalField = json.Marshal
+	}
+
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Array && rv.Kind() != reflect.Slice {
 		return enc.encodeRecord(rv)
@@ -115,7 +121,7 @@ func (enc *Encoder) encodeField(v reflect.Value, opt *field) (string, error) {
 		}
 		return enc.encodeField(v.Elem(), opt)
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.Interface, reflect.Struct:
-		j, err := json.Marshal(v.Interface())
+		j, err := enc.MarshalField(v.Interface())
 		if err != nil {
 			return "", err
 		}
