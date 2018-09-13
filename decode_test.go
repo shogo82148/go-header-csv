@@ -73,6 +73,12 @@ func TestDecode(t *testing.T) {
 			new(AString),
 			&AString{A: "b"},
 		},
+		//AString doesn't have member B
+		{
+			"A,B\nb,c\n",
+			new(AString),
+			&AString{A: "b"},
+		},
 		{
 			"A\ntrue\n",
 			new(ABool),
