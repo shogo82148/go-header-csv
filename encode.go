@@ -228,7 +228,10 @@ type structRecordType struct {
 }
 
 func (rt *structRecordType) Field(v reflect.Value, i int, name string) (reflect.Value, *field) {
-	f := rt.fields[name]
+	f, ok := rt.fields[name]
+	if !ok {
+		return reflect.Value{}, f
+	}
 	return v.Field(f.index), f
 }
 

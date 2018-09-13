@@ -99,6 +99,31 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 
 	if v.Kind() == reflect.Slice {
 		v.Set(reflect.MakeSlice(v.Type(), len(dec.header), len(dec.header)))
+		rt := recordType(t)
+		for i, k := range dec.header {
+			if i >= len(record) {
+				break
+			}
+			v, _ := rt.Field(v, i, k)
+			if err := dec.decodeField(v, record[i]); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if v.Kind() == reflect.Array {
+		rt := recordType(t)
+		for i, k := range dec.header {
+			if i >= len(record) {
+				break
+			}
+			v, _ := rt.Field(v, i, k)
+			if err := dec.decodeField(v, record[i]); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 
 	rt := recordType(t)
@@ -106,9 +131,11 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 		if i >= len(record) {
 			break
 		}
-		v, _ := rt.Field(v, i, k)
-		if err := dec.decodeField(v, record[i]); err != nil {
-			return err
+		v, f := rt.Field(v, i, k)
+		if f != nil {
+			if err := dec.decodeField(v, record[i]); err != nil {
+				return err
+			}
 		}
 	}
 
