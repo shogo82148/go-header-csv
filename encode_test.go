@@ -145,7 +145,7 @@ func TestEncode(t *testing.T) {
 		buf := &bytes.Buffer{}
 		enc := NewEncoder(buf)
 		if err := enc.Encode(tc.in); err != nil {
-			t.Errorf("unexpcted error: %v", err)
+			t.Errorf("unexpected error: %v", err)
 		}
 		enc.Flush()
 		if buf.String() != tc.out {
