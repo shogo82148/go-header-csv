@@ -43,6 +43,6 @@ jobs:
             mark-go-
       - run: go mod download
 
-      - name: sync
+      - name: test
         run: |
           go test ./...
