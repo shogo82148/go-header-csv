@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
 	"strconv"
@@ -65,7 +66,7 @@ func (dec *Decoder) Decode(v interface{}) error {
 
 func (dec *Decoder) SetHeader(header []string) error {
 	if dec.header != nil {
-		return errors.New("header has been alread set")
+		return errors.New("headercsv: the header has been already set")
 	}
 	dec.header = header
 	return nil
@@ -81,7 +82,7 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 	t := v.Type()
 	if v.Kind() == reflect.Map {
 		if t.Key().Kind() != reflect.String {
-			return errors.New("unsupported type")
+			return fmt.Errorf("headercsv: unsupported type: %s", t.Key().String())
 		}
 		elemType := v.Type().Elem()
 		for i, k := range dec.header {

@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
 	"strconv"
@@ -127,12 +128,13 @@ func (enc *Encoder) encodeField(v reflect.Value, opt *field) (string, error) {
 		}
 		return string(j), nil
 	}
-	return "", errors.New("unsuported type")
+
+	return "", fmt.Errorf("headercsv: unsupported type: %s", v.Type().String())
 }
 
 func (enc *Encoder) SetHeader(header []string) error {
 	if enc.header != nil {
-		return errors.New("header has been alread set")
+		return errors.New("headercsv: the header has been already set")
 	}
 	enc.header = header
 	return enc.w.Write(header)
