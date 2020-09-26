@@ -3,7 +3,7 @@
 
 # go-header-csv
 
-go-header-csv is encoder/decoder csv with header.
+go-header-csv is encoder/decoder csv with a header.
 
 The following is an example of csv.
 

@@ -5,12 +5,14 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
 	"strconv"
 	"sync"
 )
 
+// Encoder writes CSV records to an output stream.
 type Encoder struct {
 	MarshalField func(v interface{}) ([]byte, error)
 
@@ -18,10 +20,12 @@ type Encoder struct {
 	w      *csv.Writer
 }
 
+// NewEncoder returns a new encoder that writes to w.
 func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w: csv.NewWriter(w)}
 }
 
+// Encode writes the JSON encoding of v to the stream.
 func (enc *Encoder) Encode(v interface{}) error {
 	if enc.MarshalField == nil {
 		enc.MarshalField = json.Marshal
@@ -127,17 +131,20 @@ func (enc *Encoder) encodeField(v reflect.Value, opt *field) (string, error) {
 		}
 		return string(j), nil
 	}
-	return "", errors.New("unsuported type")
+
+	return "", fmt.Errorf("headercsv: unsupported type: %s", v.Type().String())
 }
 
+// SetHeader sets the header.
 func (enc *Encoder) SetHeader(header []string) error {
 	if enc.header != nil {
-		return errors.New("header has been alread set")
+		return errors.New("headercsv: the header has been already set")
 	}
 	enc.header = header
 	return enc.w.Write(header)
 }
 
+// Flush flushes the output stream.
 func (enc *Encoder) Flush() {
 	enc.w.Flush()
 }
