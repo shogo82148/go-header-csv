@@ -11,6 +11,7 @@ import (
 	"strconv"
 )
 
+// Decoder reads and decodes CSV values from an input stream.
 type Decoder struct {
 	UnmarshalField func(in []byte, out interface{}) error
 
@@ -18,10 +19,12 @@ type Decoder struct {
 	r      *csv.Reader
 }
 
+// NewDecoder returns a new decoder that reads from r.
 func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r: csv.NewReader(r)}
 }
 
+// Decode reads the next CSV record from its input and stores it in the value pointed to by v.
 func (dec *Decoder) Decode(v interface{}) error {
 	if dec.UnmarshalField == nil {
 		dec.UnmarshalField = json.Unmarshal
@@ -64,6 +67,8 @@ func (dec *Decoder) Decode(v interface{}) error {
 	return dec.decodeRecord(rv)
 }
 
+// SetHeader sets the header.
+// If no header is set, first CSV record is used for the header.
 func (dec *Decoder) SetHeader(header []string) error {
 	if dec.header != nil {
 		return errors.New("headercsv: the header has been already set")
