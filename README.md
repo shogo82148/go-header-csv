@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/shogo82148/go-header-csv.svg?branch=master)](https://travis-ci.org/shogo82148/go-header-csv)
+![test](https://github.com/shogo82148/go-header-csv/workflows/test/badge.svg)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/shogo82148/go-header-csv)](https://pkg.go.dev/github.com/shogo82148/go-header-csv)
 
 # go-header-csv
 
@@ -30,5 +31,3 @@ and decode into a golang struct.
   {"Ed", "Go fmt yourself!"},
 }
 ```
-
-See [godoc](https://godoc.org/github.com/shogo82148/go-header-csv) for more detail.
