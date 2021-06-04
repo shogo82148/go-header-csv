@@ -160,7 +160,7 @@ func TestDecode(t *testing.T) {
 		{
 			"a\n" + `"{""a"":""hoge""}"` + "\n",
 			map[string]AString{},
-			map[string]AString{"a": AString{A: "hoge"}},
+			map[string]AString{"a": {A: "hoge"}},
 		},
 		{
 			"a\n" + `"{""a"":""hoge""}"` + "\n",
