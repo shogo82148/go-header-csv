@@ -154,6 +154,79 @@ func TestEncode(t *testing.T) {
 	}
 }
 
+func TestEncodeAll(t *testing.T) {
+	testcases := []struct {
+		in  any
+		out string
+	}{
+		{
+			[]struct {
+				A int `csv:"a,omitempty"`
+				B int `csv:"b"`
+			}{{1, 1}, {1, 0}, {0, 1}, {0, 0}},
+			"a,b\n1,1\n1,0\n,1\n,0\n",
+		},
+
+		// struct and (slice or array)
+		{
+			[]any{
+				struct {
+					A string `csv:"a"`
+					B string `csv:"b"`
+					C string `csv:"c"`
+				}{"this", "is", "struct"},
+				[]string{"this", "is", "slice"},
+			},
+			"a,b,c\nthis,is,struct\nthis,is,slice\n",
+		},
+		{
+			[]any{
+				struct {
+					A string `csv:"a"`
+					B string `csv:"b"`
+					C string `csv:"c"`
+				}{"this", "is", "struct"},
+				&[]string{"this", "is", "slice"},
+			},
+			"a,b,c\nthis,is,struct\nthis,is,slice\n",
+		},
+		{
+			[]any{
+				struct {
+					A string `csv:"a"`
+					B string `csv:"b"`
+					C string `csv:"c"`
+				}{"this", "is", "struct"},
+				[3]string{"this", "is", "slice"},
+			},
+			"a,b,c\nthis,is,struct\nthis,is,slice\n",
+		},
+		{
+			[]any{
+				struct {
+					A string `csv:"a"`
+					B string `csv:"b"`
+					C string `csv:"c"`
+				}{"this", "is", "struct"},
+				&[3]string{"this", "is", "slice"},
+			},
+			"a,b,c\nthis,is,struct\nthis,is,slice\n",
+		},
+	}
+
+	for _, tc := range testcases {
+		var buf bytes.Buffer
+		enc := NewEncoder(&buf)
+		if err := enc.EncodeAll(tc.in); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		enc.Flush()
+		if buf.String() != tc.out {
+			t.Errorf("got %v, expected %v", buf.String(), tc.out)
+		}
+	}
+}
+
 func TestNamedRecordType(t *testing.T) {
 	testcases := []struct {
 		in      interface{}
@@ -198,8 +271,8 @@ func TestNamedRecordType(t *testing.T) {
 		// Test HeaderNames
 		headers := rt.HeaderNames(in)
 		if !tc.ordered {
-			sort.Sort(sort.StringSlice(headers))
-			sort.Sort(sort.StringSlice(tc.headers))
+			sort.Strings(headers)
+			sort.Strings(tc.headers)
 		}
 		if !reflect.DeepEqual(headers, tc.headers) {
 			t.Errorf("incorrect header: got %s, expected %v", headers, tc.headers)

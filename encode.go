@@ -14,7 +14,7 @@ import (
 
 // Encoder writes CSV records to an output stream.
 type Encoder struct {
-	MarshalField func(v interface{}) ([]byte, error)
+	MarshalField func(v any) ([]byte, error)
 
 	header []string
 	w      *csv.Writer
@@ -26,7 +26,7 @@ func NewEncoder(w io.Writer) *Encoder {
 }
 
 // Encode writes the JSON encoding of v to the stream.
-func (enc *Encoder) Encode(v interface{}) error {
+func (enc *Encoder) Encode(v any) error {
 	if enc.MarshalField == nil {
 		enc.MarshalField = json.Marshal
 	}
@@ -34,6 +34,28 @@ func (enc *Encoder) Encode(v interface{}) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Array && rv.Kind() != reflect.Slice {
 		return enc.encodeRecord(rv)
+	}
+
+	for i := 0; i < rv.Len(); i++ {
+		err := enc.encodeRecord(rv.Index(i))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// EncodeAll writes all CSV records to the stream.
+// v must be a slice or an array.
+func (enc *Encoder) EncodeAll(v any) error {
+	if enc.MarshalField == nil {
+		enc.MarshalField = json.Marshal
+	}
+
+	rv := reflect.ValueOf(v)
+	kind := rv.Kind()
+	if kind != reflect.Array && kind != reflect.Slice {
+		return errors.New("headercsv: v is neither a slice nor an array")
 	}
 
 	for i := 0; i < rv.Len(); i++ {
