@@ -221,6 +221,9 @@ func TestEncodeAll(t *testing.T) {
 			t.Errorf("unexpected error: %v", err)
 		}
 		enc.Flush()
+		if err := enc.Error(); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
 		if buf.String() != tc.out {
 			t.Errorf("got %v, expected %v", buf.String(), tc.out)
 		}
