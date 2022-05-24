@@ -166,9 +166,15 @@ func (enc *Encoder) SetHeader(header []string) error {
 	return enc.w.Write(header)
 }
 
-// Flush flushes the output stream.
+// Flush writes any buffered data to the underlying io.Writer.
+// To check if an error occurred during the Flush, call Error.
 func (enc *Encoder) Flush() {
 	enc.w.Flush()
+}
+
+// Error reports any error that has occurred during a previous Write or Flush.
+func (enc *Encoder) Error() error {
+	return enc.w.Error()
 }
 
 type recordInterface interface {
