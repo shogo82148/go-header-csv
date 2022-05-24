@@ -30,12 +30,8 @@ func (dec *Decoder) Decode(v any) error {
 		dec.UnmarshalField = json.Unmarshal
 	}
 
-	if dec.header == nil {
-		record, err := dec.r.Read()
-		if err != nil {
-			return err
-		}
-		dec.SetHeader(record)
+	if err := dec.initHeader(); err != nil {
+		return err
 	}
 
 	rv := reflect.ValueOf(v)
@@ -72,14 +68,8 @@ func (dec *Decoder) DecodeAll(v any) error {
 		dec.UnmarshalField = json.Unmarshal
 	}
 
-	if dec.header == nil {
-		record, err := dec.r.Read()
-		if err != nil {
-			return err
-		}
-		if err := dec.SetHeader(record); err != nil {
-			return err
-		}
+	if err := dec.initHeader(); err != nil {
+		return err
 	}
 
 	rv := reflect.ValueOf(v)
@@ -128,6 +118,18 @@ func (dec *Decoder) DecodeAll(v any) error {
 func (dec *Decoder) SetHeader(header []string) error {
 	if dec.header != nil {
 		return errors.New("headercsv: the header has been already set")
+	}
+	dec.header = header
+	return nil
+}
+
+func (dec *Decoder) initHeader() error {
+	if dec.header != nil {
+		return nil
+	}
+	header, err := dec.r.Read()
+	if err != nil {
+		return err
 	}
 	dec.header = header
 	return nil
