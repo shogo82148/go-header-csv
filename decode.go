@@ -24,6 +24,11 @@ func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r: csv.NewReader(r)}
 }
 
+// NewDecoderCSV returns a new decoder that reads from r.
+func NewDecoderCSV(r *csv.Reader) *Decoder {
+	return &Decoder{r: r}
+}
+
 // Decode reads the next CSV record from its input and stores it in the value pointed to by v.
 func (dec *Decoder) Decode(v any) error {
 	if dec.UnmarshalField == nil {
