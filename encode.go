@@ -45,6 +45,16 @@ func (enc *Encoder) Encode(v any) error {
 	return nil
 }
 
+// EncodeRecord writes a CSV record to the stream.
+func (enc *Encoder) EncodeRecord(v any) error {
+	if enc.MarshalField == nil {
+		enc.MarshalField = json.Marshal
+	}
+
+	rv := reflect.ValueOf(v)
+	return enc.encodeRecord(rv)
+}
+
 // EncodeAll writes all CSV records to the stream.
 // v must be a slice or an array.
 func (enc *Encoder) EncodeAll(v any) error {

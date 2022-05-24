@@ -154,6 +154,97 @@ func TestEncode(t *testing.T) {
 	}
 }
 
+func TestEncodeRecord(t *testing.T) {
+	type FooBar struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	testcases := []struct {
+		in  any
+		out string
+	}{
+		{
+			map[string]string{"a": "b"},
+			"a\nb\n",
+		},
+		{
+			struct{ A string }{"b"},
+			"A\nb\n",
+		},
+		{
+			struct {
+				A string `csv:"a"`
+			}{"b"},
+			"a\nb\n",
+		},
+		{
+			struct {
+				A string `csv:"-"`
+				B string `csv:"b"`
+			}{"a", "b"},
+			"b\nb\n",
+		},
+		{
+			struct {
+				A int `csv:"a"`
+			}{10},
+			"a\n10\n",
+		},
+		{
+			struct {
+				A uint `csv:"a"`
+			}{10},
+			"a\n10\n",
+		},
+		{
+			struct {
+				A float64 `csv:"a"`
+			}{10},
+			"a\n10\n",
+		},
+		{
+			struct {
+				A FooBar
+			}{A: FooBar{"f", "b"}},
+			"A\n" + `"{""foo"":""f"",""bar"":""b""}"` + "\n",
+		},
+		{
+			struct {
+				A testMarshal
+			}{A: 0},
+			"A\n<testMarshal>\n",
+		},
+		{
+			struct {
+				A *string `csv:"a"`
+			}{new(string)},
+			"a\n\n",
+		},
+		{
+			&struct {
+				A string `csv:"a"`
+			}{"b"},
+			"a\nb\n",
+		},
+	}
+
+	for _, tc := range testcases {
+		var buf bytes.Buffer
+		enc := NewEncoder(&buf)
+		if err := enc.EncodeRecord(tc.in); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		enc.Flush()
+		if err := enc.Error(); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if buf.String() != tc.out {
+			t.Errorf("got %v, expected %v", buf.String(), tc.out)
+		}
+	}
+}
+
 func TestEncodeAll(t *testing.T) {
 	testcases := []struct {
 		in  any
