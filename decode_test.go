@@ -199,6 +199,144 @@ func TestDecode(t *testing.T) {
 	}
 }
 
+func TestDecodeRecord(t *testing.T) {
+	testcases := []struct {
+		in  string
+		ptr any
+		out any
+	}{
+		// struct
+		{
+			"A\nb\n",
+			new(AString),
+			&AString{A: "b"},
+		},
+		//AString doesn't have member B
+		{
+			"A,B\nb,c\n",
+			new(AString),
+			&AString{A: "b"},
+		},
+		{
+			"A\ntrue\n",
+			new(ABool),
+			&ABool{A: true},
+		},
+		{
+			"A\n123\n",
+			new(AInt),
+			&AInt{A: 123},
+		},
+		{
+			"A\n123\n",
+			new(AFloat),
+			&AFloat{A: 123},
+		},
+		{
+			"a\nb\n",
+			new(ATag),
+			&ATag{A: "b"},
+		},
+		{
+			"a\nhoge\n",
+			new(AInterface),
+			&AInterface{A: "hoge"},
+		},
+
+		// pointer
+		{
+			"A,B\na,b\n",
+			new(APtr),
+			&APtr{ptrstr("a"), "b"},
+		},
+
+		// map
+		{
+			"a\nb\n",
+			new(map[string]string),
+			&map[string]string{"a": "b"},
+		},
+		{
+			"a\n123\n",
+			new(map[string]int),
+			&map[string]int{"a": 123},
+		},
+		{
+			"a\nb\n",
+			new(map[string]any),
+			&map[string]any{"a": "b"},
+		},
+
+		// nested struct
+		{
+			"a\n" + `"{""a"":""hoge""}"` + "\n",
+			new(AStruct),
+			&AStruct{A: AString{A: "hoge"}},
+		},
+		{
+			"a\n" + `"{""a"":""hoge""}"` + "\n",
+			new(map[string]AString),
+			&map[string]AString{"a": {A: "hoge"}},
+		},
+		{
+			"a\n" + `"{""a"":""hoge""}"` + "\n",
+			new(AMap),
+			&AMap{A: map[string]string{"a": "hoge"}},
+		},
+
+		// TextUnmarshaler
+		{
+			"a\nA\n",
+			new(map[string]testUnmarshal),
+			&map[string]testUnmarshal{"a": 10},
+		},
+	}
+
+	for _, tc := range testcases {
+		d := NewDecoder(bytes.NewBufferString(tc.in))
+		if err := d.DecodeRecord(tc.ptr); err != nil {
+			t.Errorf("%#v, %T: unexpected error: %v", tc.in, tc.out, err)
+		}
+		if !reflect.DeepEqual(tc.ptr, tc.out) {
+			t.Errorf("%#v, %T: got %#v, want %#v", tc.in, tc.out, tc.ptr, tc.out)
+		}
+	}
+}
+
+func TestDecodeRecord_Error(t *testing.T) {
+	t.Run("not a pointer", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		err := d.DecodeRecord(123)
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("unsupported key type", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		err := d.DecodeRecord(&map[int]any{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("overflow int8", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\n128\n"))
+		err := d.DecodeRecord(&map[string]int8{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("overflow uint8", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\n256\n"))
+		err := d.DecodeRecord(&map[string]uint8{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+}
+
 func TestDecodeAll(t *testing.T) {
 	testcases := []struct {
 		in  string
