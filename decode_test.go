@@ -198,3 +198,105 @@ func TestDecode(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodeAll(t *testing.T) {
+	testcases := []struct {
+		in  string
+		ptr any
+		out any
+	}{
+		// slice of struct
+		{
+			"A\nhoge\nfuga",
+			new([]AString),
+			&[]AString{{"hoge"}, {"fuga"}},
+		},
+		{
+			"A\nhoge\nfuga",
+			new([]*AString),
+			&[]*AString{{"hoge"}, {"fuga"}},
+		},
+
+		// array of struct
+		{
+			"A\nhoge\nfuga\n",
+			new([3]AString),
+			&[3]AString{{"hoge"}, {"fuga"}, {""}},
+		},
+		{
+			"A\nhoge\nfuga\n",
+			new([3]*AString),
+			&[3]*AString{{"hoge"}, {"fuga"}, nil},
+		},
+
+		// pointer
+		{
+			"A,B\na,b\n,b\na,\n",
+			new([]*APtr),
+			&[]*APtr{{ptrstr("a"), "b"}, {nil, "b"}, {ptrstr("a"), ""}},
+		},
+
+		// map
+		{
+			"a\nb\n",
+			new([]map[string]string),
+			&[]map[string]string{{"a": "b"}},
+		},
+		{
+			"a\n123\n",
+			new([]map[string]int),
+			&[]map[string]int{{"a": 123}},
+		},
+		{
+			"a\nb\n",
+			new([]map[string]any),
+			&[]map[string]any{{"a": "b"}},
+		},
+
+		// nested struct
+		{
+			"a\n" + `"{""a"":""hoge""}"` + "\n",
+			new([]*AStruct),
+			&[]*AStruct{{A: AString{A: "hoge"}}},
+		},
+		{
+			"a\n" + `"{""a"":""hoge""}"` + "\n",
+			new([]map[string]AString),
+			&[]map[string]AString{{"a": {A: "hoge"}}},
+		},
+		{
+			"a\n" + `"{""a"":""hoge""}"` + "\n",
+			new([]*AMap),
+			&[]*AMap{{A: map[string]string{"a": "hoge"}}},
+		},
+
+		// slice of slice
+		{
+			"a,b,c\n1,2,3\n4,5,6\n",
+			new([][]string),
+			&[][]string{{"1", "2", "3"}, {"4", "5", "6"}},
+		},
+		{
+			"a,b,c\n1,2,3\n4,5,6\n",
+			new([][3]string),
+			&[][3]string{{"1", "2", "3"}, {"4", "5", "6"}},
+		},
+
+		// TextUnmarshaler
+		{
+			"a\nA\n",
+			new([]map[string]testUnmarshal),
+			&[]map[string]testUnmarshal{{"a": 10}},
+		},
+	}
+
+	for _, tc := range testcases {
+		d := NewDecoder(bytes.NewBufferString(tc.in))
+		if err := d.DecodeAll(tc.ptr); err != nil {
+			t.Errorf("%#v, %T: unexpected error: %v", tc.in, tc.out, err)
+		}
+		if !reflect.DeepEqual(tc.ptr, tc.out) {
+			t.Errorf("%#v, %T: got %#v, want %#v", tc.in, tc.out, tc.ptr, tc.out)
+		}
+	}
+}

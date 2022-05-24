@@ -13,7 +13,7 @@ import (
 
 // Decoder reads and decodes CSV values from an input stream.
 type Decoder struct {
-	UnmarshalField func(in []byte, out interface{}) error
+	UnmarshalField func(in []byte, out any) error
 
 	header []string
 	r      *csv.Reader
@@ -25,17 +25,13 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 // Decode reads the next CSV record from its input and stores it in the value pointed to by v.
-func (dec *Decoder) Decode(v interface{}) error {
+func (dec *Decoder) Decode(v any) error {
 	if dec.UnmarshalField == nil {
 		dec.UnmarshalField = json.Unmarshal
 	}
 
-	if dec.header == nil {
-		record, err := dec.r.Read()
-		if err != nil {
-			return err
-		}
-		dec.SetHeader(record)
+	if err := dec.initHeader(); err != nil {
+		return err
 	}
 
 	rv := reflect.ValueOf(v)
@@ -67,11 +63,73 @@ func (dec *Decoder) Decode(v interface{}) error {
 	return dec.decodeRecord(rv)
 }
 
+func (dec *Decoder) DecodeAll(v any) error {
+	if dec.UnmarshalField == nil {
+		dec.UnmarshalField = json.Unmarshal
+	}
+
+	if err := dec.initHeader(); err != nil {
+		return err
+	}
+
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr {
+		return errors.New("headercsv: v is not a pointer")
+	}
+
+	elem := rv.Elem()
+	switch elem.Kind() {
+	case reflect.Slice:
+		typ := elem.Type()
+		typeElem := typ.Elem()
+		newElem := reflect.MakeSlice(typ, 0, 4)
+		for {
+			ev := reflect.New(typeElem)
+			if err := dec.decodeRecord(ev); err != nil {
+				elem.Set(newElem)
+				if errors.Is(err, io.EOF) {
+					return nil
+				}
+				return err
+			}
+			newElem = reflect.Append(newElem, ev.Elem())
+		}
+	case reflect.Array:
+		l := elem.Len()
+		for i := 0; i < l; i++ {
+			ev := elem.Index(i)
+			if err := dec.decodeRecord(ev); err != nil {
+				ev.Set(reflect.Zero(ev.Type()))
+				if errors.Is(err, io.EOF) {
+					return nil
+				}
+				return err
+			}
+		}
+	default:
+		return errors.New("headercsv: v is neither a slice nor an array")
+	}
+
+	return nil
+}
+
 // SetHeader sets the header.
 // If no header is set, first CSV record is used for the header.
 func (dec *Decoder) SetHeader(header []string) error {
 	if dec.header != nil {
 		return errors.New("headercsv: the header has been already set")
+	}
+	dec.header = header
+	return nil
+}
+
+func (dec *Decoder) initHeader() error {
+	if dec.header != nil {
+		return nil
+	}
+	header, err := dec.r.Read()
+	if err != nil {
+		return err
 	}
 	dec.header = header
 	return nil
@@ -85,9 +143,13 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 	}
 
 	t := v.Type()
-	if v.Kind() == reflect.Map {
+	switch v.Kind() {
+	case reflect.Map:
 		if t.Key().Kind() != reflect.String {
 			return fmt.Errorf("headercsv: unsupported type: %s", t.Key().String())
+		}
+		if v.IsZero() {
+			v.Set(reflect.MakeMap(t))
 		}
 		elemType := v.Type().Elem()
 		for i, k := range dec.header {
@@ -101,9 +163,8 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 			v.SetMapIndex(reflect.ValueOf(k), elem)
 		}
 		return nil
-	}
 
-	if v.Kind() == reflect.Slice {
+	case reflect.Slice:
 		v.Set(reflect.MakeSlice(v.Type(), len(dec.header), len(dec.header)))
 		rt := recordType(t)
 		for i, k := range dec.header {
@@ -116,9 +177,8 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 			}
 		}
 		return nil
-	}
 
-	if v.Kind() == reflect.Array {
+	case reflect.Array:
 		rt := recordType(t)
 		for i, k := range dec.header {
 			if i >= len(record) {
