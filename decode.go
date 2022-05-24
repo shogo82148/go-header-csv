@@ -63,7 +63,13 @@ func (dec *Decoder) Decode(v any) error {
 	return dec.decodeRecord(rv)
 }
 
-func (dec *Decoder) DecodeAll(v any) error {
+// DecodeRecord reads the next CSV record from its input and stores it in the value pointed to by v.
+func (dec *Decoder) DecodeRecord(v any) error {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr {
+		return errors.New("headercsv: v is not a pointer")
+	}
+
 	if dec.UnmarshalField == nil {
 		dec.UnmarshalField = json.Unmarshal
 	}
@@ -72,9 +78,23 @@ func (dec *Decoder) DecodeAll(v any) error {
 		return err
 	}
 
+	return dec.decodeRecord(rv)
+}
+
+// DecodeAll reads all CSV record from its input.
+// v must be a pinter to a slice or a pointer to an array.
+func (dec *Decoder) DecodeAll(v any) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr {
 		return errors.New("headercsv: v is not a pointer")
+	}
+
+	if dec.UnmarshalField == nil {
+		dec.UnmarshalField = json.Unmarshal
+	}
+
+	if err := dec.initHeader(); err != nil {
+		return err
 	}
 
 	elem := rv.Elem()
