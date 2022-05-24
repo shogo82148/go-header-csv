@@ -303,6 +303,40 @@ func TestDecodeRecord(t *testing.T) {
 	}
 }
 
+func TestDecodeRecord_Error(t *testing.T) {
+	t.Run("not a pointer", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		err := d.DecodeRecord(123)
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("unsupported key type", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		err := d.DecodeRecord(&map[int]any{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("overflow int8", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\n128\n"))
+		err := d.DecodeRecord(&map[string]int8{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("overflow uint8", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\n256\n"))
+		err := d.DecodeRecord(&map[string]uint8{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+}
+
 func TestDecodeAll(t *testing.T) {
 	testcases := []struct {
 		in  string
