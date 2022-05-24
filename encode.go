@@ -25,6 +25,11 @@ func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w: csv.NewWriter(w)}
 }
 
+// NewEncoder returns a new encoder that writes to w.
+func NewEncoderCSV(w *csv.Writer) *Encoder {
+	return &Encoder{w: w}
+}
+
 // Encode writes the JSON encoding of v to the stream.
 func (enc *Encoder) Encode(v any) error {
 	if enc.MarshalField == nil {
