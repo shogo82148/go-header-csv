@@ -77,7 +77,9 @@ func (dec *Decoder) DecodeAll(v any) error {
 		if err != nil {
 			return err
 		}
-		dec.SetHeader(record)
+		if err := dec.SetHeader(record); err != nil {
+			return err
+		}
 	}
 
 	rv := reflect.ValueOf(v)
