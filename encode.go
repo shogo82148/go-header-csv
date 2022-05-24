@@ -197,27 +197,17 @@ type recordInterface interface {
 	HeaderNames(v reflect.Value) []string
 }
 
-var recordTypeCache struct {
-	sync.RWMutex
-	m map[reflect.Type]recordInterface
-}
+var recordTypeCache sync.Map
 
 func recordType(t reflect.Type) recordInterface {
-	recordTypeCache.RLock()
-	f := recordTypeCache.m[t]
-	recordTypeCache.RUnlock()
-	if f != nil {
-		return f
+	f, ok := recordTypeCache.Load(t)
+	if ok {
+		return f.(recordInterface)
 	}
 
-	f = newRecordType(t)
-	recordTypeCache.Lock()
-	if recordTypeCache.m == nil {
-		recordTypeCache.m = map[reflect.Type]recordInterface{}
-	}
-	recordTypeCache.m[t] = f
-	recordTypeCache.Unlock()
-	return f
+	newType := newRecordType(t)
+	recordTypeCache.Store(t, newType)
+	return newType
 }
 
 func newRecordType(t reflect.Type) recordInterface {
