@@ -253,7 +253,7 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 		}
 		v.SetBool(b)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		i, err := strconv.ParseInt(field, 10, 64)
+		i, err := strconv.ParseInt(field, 0, 64)
 		if err != nil {
 			return err
 		}
@@ -262,7 +262,7 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 		}
 		v.SetInt(i)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		i, err := strconv.ParseUint(field, 10, 64)
+		i, err := strconv.ParseUint(field, 0, 64)
 		if err != nil {
 			return err
 		}

@@ -228,6 +228,16 @@ func TestDecodeRecord(t *testing.T) {
 			&AInt{A: 123},
 		},
 		{
+			"A\n0x123\n",
+			new(AInt),
+			&AInt{A: 0x123},
+		},
+		{
+			"A\n0123\n",
+			new(AInt),
+			&AInt{A: 0123},
+		},
+		{
 			"A\n123\n",
 			new(AFloat),
 			&AFloat{A: 123},
