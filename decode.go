@@ -30,6 +30,8 @@ func NewDecoderCSV(r *csv.Reader) *Decoder {
 }
 
 // Decode reads the next CSV record from its input and stores it in the value pointed to by v.
+//
+// Deprecated: use DecodeRecord or DecodeAll instead.
 func (dec *Decoder) Decode(v any) error {
 	if dec.UnmarshalField == nil {
 		dec.UnmarshalField = json.Unmarshal

@@ -30,7 +30,9 @@ func NewEncoderCSV(w *csv.Writer) *Encoder {
 	return &Encoder{w: w}
 }
 
-// Encode writes the JSON encoding of v to the stream.
+// Encode writes a CSV record to the stream.
+//
+// Deprecated: use EncodeRecord or EncodeAll instead.
 func (enc *Encoder) Encode(v any) error {
 	if enc.MarshalField == nil {
 		enc.MarshalField = json.Marshal
