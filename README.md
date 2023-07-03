@@ -23,7 +23,7 @@ Ed,Go fmt yourself!
 
 	buf := bytes.NewBufferString(in)
 	dec := headercsv.NewDecoder(buf)
-	dec.Decode(&out)
+	dec.DecodeAll(&out)
 
 	for _, v := range out {
 		fmt.Printf("%3s: %s\n", v.Name, v.Text)
