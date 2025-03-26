@@ -2,6 +2,7 @@ package headercsv
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"reflect"
 	"strconv"
@@ -334,6 +335,22 @@ func TestDecodeRecord_Error(t *testing.T) {
 		d := NewDecoder(bytes.NewBufferString("a\n128\n"))
 		err := d.DecodeRecord(&map[string]int8{})
 		if err == nil {
+			t.Error("want err, but none")
+		}
+		var decodeErr *DecodeError
+		if !errors.As(err, &decodeErr) {
+			t.Fatal("want DecodeError, but none")
+		}
+		if decodeErr.StartLine != 2 {
+			t.Errorf("got %d, want 2", decodeErr.StartLine)
+		}
+		if decodeErr.Line != 2 {
+			t.Errorf("got %d, want 2", decodeErr.Line)
+		}
+		if decodeErr.Column != 1 {
+			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Err == nil {
 			t.Error("want err, but none")
 		}
 	})

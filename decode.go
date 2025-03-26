@@ -11,6 +11,27 @@ import (
 	"strconv"
 )
 
+// A DecodeError is returned for decoding errors.
+// Line and column numbers are 1-indexed.
+type DecodeError struct {
+	StartLine int   // Line where the record starts
+	Line      int   // Line where the error occurred
+	Column    int   // Column (1-based byte index) where the error occurred
+	Err       error // The actual error
+}
+
+func (e *DecodeError) Error() string {
+	if e.StartLine != e.Line {
+		return fmt.Sprintf("headercsv: decode error on line %d (starting at line %d), column %d: %v", e.Line, e.StartLine, e.Column, e.Err)
+	}
+	return fmt.Sprintf("headercsv: decode error on line %d, column %d: %v", e.Line, e.Column, e.Err)
+}
+
+// Unwrap returns the underlying error.
+func (e *DecodeError) Unwrap() error {
+	return e.Err
+}
+
 // Decoder reads and decodes CSV values from an input stream.
 type Decoder struct {
 	UnmarshalField func(in []byte, out any) error
@@ -185,7 +206,14 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 			}
 			elem := reflect.New(elemType).Elem()
 			if err := dec.decodeField(elem, record[i]); err != nil {
-				return err
+				startLine, _ := dec.r.FieldPos(0)
+				line, col := dec.r.FieldPos(i)
+				return &DecodeError{
+					StartLine: startLine,
+					Line:      line,
+					Column:    col,
+					Err:       err,
+				}
 			}
 			v.SetMapIndex(reflect.ValueOf(k), elem)
 		}
@@ -200,7 +228,14 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 			}
 			v, _ := rt.Field(v, i, k)
 			if err := dec.decodeField(v, record[i]); err != nil {
-				return err
+				startLine, _ := dec.r.FieldPos(0)
+				line, col := dec.r.FieldPos(i)
+				return &DecodeError{
+					StartLine: startLine,
+					Line:      line,
+					Column:    col,
+					Err:       err,
+				}
 			}
 		}
 		return nil
@@ -213,7 +248,14 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 			}
 			v, _ := rt.Field(v, i, k)
 			if err := dec.decodeField(v, record[i]); err != nil {
-				return err
+				startLine, _ := dec.r.FieldPos(0)
+				line, col := dec.r.FieldPos(i)
+				return &DecodeError{
+					StartLine: startLine,
+					Line:      line,
+					Column:    col,
+					Err:       err,
+				}
 			}
 		}
 		return nil
@@ -227,7 +269,14 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 		v, f := rt.Field(v, i, k)
 		if f != nil {
 			if err := dec.decodeField(v, record[i]); err != nil {
-				return err
+				startLine, _ := dec.r.FieldPos(0)
+				line, col := dec.r.FieldPos(i)
+				return &DecodeError{
+					StartLine: startLine,
+					Line:      line,
+					Column:    col,
+					Err:       err,
+				}
 			}
 		}
 	}
@@ -260,7 +309,7 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 			return err
 		}
 		if v.OverflowInt(i) {
-			return errors.New("overflow")
+			return errors.New("integer overflow")
 		}
 		v.SetInt(i)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
@@ -269,7 +318,7 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 			return err
 		}
 		if v.OverflowUint(i) {
-			return errors.New("overflow")
+			return errors.New("unsigned integer overflow")
 		}
 		v.SetUint(i)
 	case reflect.Float32, reflect.Float64:
@@ -278,7 +327,7 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 			return err
 		}
 		if v.OverflowFloat(n) {
-			return errors.New("overflow")
+			return errors.New("float overflow")
 		}
 		v.SetFloat(n)
 	case reflect.String:
