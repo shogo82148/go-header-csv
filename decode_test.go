@@ -331,7 +331,7 @@ func TestDecodeRecord_Error(t *testing.T) {
 		}
 	})
 
-	t.Run("overflow int8", func(t *testing.T) {
+	t.Run("overflow int8 in maps", func(t *testing.T) {
 		d := NewDecoder(bytes.NewBufferString("a\n128\n"))
 		err := d.DecodeRecord(&map[string]int8{})
 		if err == nil {
@@ -355,10 +355,196 @@ func TestDecodeRecord_Error(t *testing.T) {
 		}
 	})
 
-	t.Run("overflow uint8", func(t *testing.T) {
+	t.Run("overflow int8 in slice", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\n128\n"))
+		err := d.DecodeRecord(&[]int8{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+		var decodeErr *DecodeError
+		if !errors.As(err, &decodeErr) {
+			t.Fatal("want DecodeError, but none")
+		}
+		if decodeErr.StartLine != 2 {
+			t.Errorf("got %d, want 2", decodeErr.StartLine)
+		}
+		if decodeErr.Line != 2 {
+			t.Errorf("got %d, want 2", decodeErr.Line)
+		}
+		if decodeErr.Column != 1 {
+			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("overflow int8 in array", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\n128\n"))
+		err := d.DecodeRecord(&[1]int8{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+		var decodeErr *DecodeError
+		if !errors.As(err, &decodeErr) {
+			t.Fatal("want DecodeError, but none")
+		}
+		if decodeErr.StartLine != 2 {
+			t.Errorf("got %d, want 2", decodeErr.StartLine)
+		}
+		if decodeErr.Line != 2 {
+			t.Errorf("got %d, want 2", decodeErr.Line)
+		}
+		if decodeErr.Column != 1 {
+			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("overflow int8 in struct", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\n128\n"))
+		err := d.DecodeRecord(&struct {
+			A int8 `csv:"a"`
+		}{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+		var decodeErr *DecodeError
+		if !errors.As(err, &decodeErr) {
+			t.Fatal("want DecodeError, but none")
+		}
+		if decodeErr.StartLine != 2 {
+			t.Errorf("got %d, want 2", decodeErr.StartLine)
+		}
+		if decodeErr.Line != 2 {
+			t.Errorf("got %d, want 2", decodeErr.Line)
+		}
+		if decodeErr.Column != 1 {
+			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("overflow uint8 in maps", func(t *testing.T) {
 		d := NewDecoder(bytes.NewBufferString("a\n256\n"))
 		err := d.DecodeRecord(&map[string]uint8{})
 		if err == nil {
+			t.Error("want err, but none")
+		}
+		var decodeErr *DecodeError
+		if !errors.As(err, &decodeErr) {
+			t.Fatal("want DecodeError, but none")
+		}
+		if decodeErr.StartLine != 2 {
+			t.Errorf("got %d, want 2", decodeErr.StartLine)
+		}
+		if decodeErr.Line != 2 {
+			t.Errorf("got %d, want 2", decodeErr.Line)
+		}
+		if decodeErr.Column != 1 {
+			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("parse error int8 in maps", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nabc\n"))
+		err := d.DecodeRecord(&map[string]int8{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+		var decodeErr *DecodeError
+		if !errors.As(err, &decodeErr) {
+			t.Fatal("want DecodeError, but none")
+		}
+		if decodeErr.StartLine != 2 {
+			t.Errorf("got %d, want 2", decodeErr.StartLine)
+		}
+		if decodeErr.Line != 2 {
+			t.Errorf("got %d, want 2", decodeErr.Line)
+		}
+		if decodeErr.Column != 1 {
+			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("parse error uint8 in maps", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nabc\n"))
+		err := d.DecodeRecord(&map[string]uint8{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+		var decodeErr *DecodeError
+		if !errors.As(err, &decodeErr) {
+			t.Fatal("want DecodeError, but none")
+		}
+		if decodeErr.StartLine != 2 {
+			t.Errorf("got %d, want 2", decodeErr.StartLine)
+		}
+		if decodeErr.Line != 2 {
+			t.Errorf("got %d, want 2", decodeErr.Line)
+		}
+		if decodeErr.Column != 1 {
+			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("overflow float32 in maps", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\n1e100\n"))
+		err := d.DecodeRecord(&map[string]float32{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+		var decodeErr *DecodeError
+		if !errors.As(err, &decodeErr) {
+			t.Fatal("want DecodeError, but none")
+		}
+		if decodeErr.StartLine != 2 {
+			t.Errorf("got %d, want 2", decodeErr.StartLine)
+		}
+		if decodeErr.Line != 2 {
+			t.Errorf("got %d, want 2", decodeErr.Line)
+		}
+		if decodeErr.Column != 1 {
+			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("parse error float32 in maps", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nabc\n"))
+		err := d.DecodeRecord(&map[string]float32{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+		var decodeErr *DecodeError
+		if !errors.As(err, &decodeErr) {
+			t.Fatal("want DecodeError, but none")
+		}
+		if decodeErr.StartLine != 2 {
+			t.Errorf("got %d, want 2", decodeErr.StartLine)
+		}
+		if decodeErr.Line != 2 {
+			t.Errorf("got %d, want 2", decodeErr.Line)
+		}
+		if decodeErr.Column != 1 {
+			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Err == nil {
 			t.Error("want err, but none")
 		}
 	})
