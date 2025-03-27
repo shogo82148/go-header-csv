@@ -66,6 +66,6 @@ func ExampleEncoder_EncodeAll() {
 
 ## Related Works
 
-- https://github.com/gocarina/gocsv
-- https://github.com/jszwec/csvutil
-- https://github.com/yunabe/easycsv
+- [gocarina/gocsv](https://github.com/gocarina/gocsv)
+- [jszwec/csvutil](https://github.com/jszwec/csvutil)
+- [yunabe/easycsv](https://github.com/yunabe/easycsv)
