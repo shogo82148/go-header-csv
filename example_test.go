@@ -3,6 +3,7 @@ package headercsv_test
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 
 	headercsv "github.com/shogo82148/go-header-csv"
@@ -21,8 +22,13 @@ func ExampleEncoder_Encode() {
 	}
 
 	enc := headercsv.NewEncoder(os.Stdout)
-	enc.Encode(in)
+	if err := enc.Encode(in); err != nil {
+		panic(err)
+	}
 	enc.Flush()
+	if err := enc.Error(); err != nil {
+		panic(err)
+	}
 
 	// Output:
 	// name,text
@@ -40,8 +46,13 @@ func ExampleEncoder_EncodeRecord() {
 	}{"Ed", "Knock knock."}
 
 	enc := headercsv.NewEncoder(os.Stdout)
-	enc.EncodeRecord(in)
+	if err := enc.EncodeRecord(in); err != nil {
+		panic(err)
+	}
 	enc.Flush()
+	if err := enc.Error(); err != nil {
+		panic(err)
+	}
 
 	// Output:
 	// name,text
@@ -61,8 +72,13 @@ func ExampleEncoder_EncodeAll() {
 	}
 
 	enc := headercsv.NewEncoder(os.Stdout)
-	enc.EncodeAll(in)
+	if err := enc.EncodeAll(in); err != nil {
+		panic(err)
+	}
 	enc.Flush()
+	if err := enc.Error(); err != nil {
+		panic(err)
+	}
 
 	// Output:
 	// name,text
@@ -88,7 +104,9 @@ Ed,Go fmt yourself!
 
 	buf := bytes.NewBufferString(in)
 	dec := headercsv.NewDecoder(buf)
-	dec.Decode(&out)
+	if err := dec.Decode(&out); err != nil && err != io.EOF {
+		panic(err)
+	}
 
 	for _, v := range out {
 		fmt.Printf("%3s: %s\n", v.Name, v.Text)
@@ -116,7 +134,9 @@ Ed,Go fmt yourself!
 
 	buf := bytes.NewBufferString(in)
 	dec := headercsv.NewDecoder(buf)
-	dec.DecodeRecord(&out)
+	if err := dec.DecodeRecord(&out); err != nil {
+		panic(err)
+	}
 
 	fmt.Printf("%3s: %s\n", out.Name, out.Text)
 	// Output:
@@ -138,7 +158,9 @@ Ed,Go fmt yourself!
 
 	buf := bytes.NewBufferString(in)
 	dec := headercsv.NewDecoder(buf)
-	dec.Decode(&out)
+	if err := dec.DecodeAll(&out); err != nil {
+		panic(err)
+	}
 
 	for _, v := range out {
 		fmt.Printf("%3s: %s\n", v.Name, v.Text)
