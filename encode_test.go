@@ -20,7 +20,7 @@ func TestEncode(t *testing.T) {
 	}
 
 	testcases := []struct {
-		in  interface{}
+		in  any
 		out string
 	}{
 		{
@@ -96,7 +96,7 @@ func TestEncode(t *testing.T) {
 
 		// struct and (slice or array)
 		{
-			[]interface{}{
+			[]any{
 				struct {
 					A string `csv:"a"`
 					B string `csv:"b"`
@@ -107,7 +107,7 @@ func TestEncode(t *testing.T) {
 			"a,b,c\nthis,is,struct\nthis,is,slice\n",
 		},
 		{
-			[]interface{}{
+			[]any{
 				struct {
 					A string `csv:"a"`
 					B string `csv:"b"`
@@ -118,7 +118,7 @@ func TestEncode(t *testing.T) {
 			"a,b,c\nthis,is,struct\nthis,is,slice\n",
 		},
 		{
-			[]interface{}{
+			[]any{
 				struct {
 					A string `csv:"a"`
 					B string `csv:"b"`
@@ -129,7 +129,7 @@ func TestEncode(t *testing.T) {
 			"a,b,c\nthis,is,struct\nthis,is,slice\n",
 		},
 		{
-			[]interface{}{
+			[]any{
 				struct {
 					A string `csv:"a"`
 					B string `csv:"b"`
@@ -323,7 +323,7 @@ func TestEncodeAll(t *testing.T) {
 
 func TestNamedRecordType(t *testing.T) {
 	testcases := []struct {
-		in      interface{}
+		in      any
 		out     map[string]string
 		headers []string
 		ordered bool

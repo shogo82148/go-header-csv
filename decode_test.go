@@ -30,7 +30,7 @@ type ATag struct {
 }
 
 type AInterface struct {
-	A interface{} `csv:"a"`
+	A any `csv:"a"`
 }
 
 type AStruct struct {
@@ -63,8 +63,8 @@ func (t *testUnmarshal) UnmarshalText(data []byte) error {
 func TestDecode(t *testing.T) {
 	testcases := []struct {
 		in  string
-		ptr interface{}
-		out interface{}
+		ptr any
+		out any
 	}{
 		// struct
 		{
@@ -148,8 +148,8 @@ func TestDecode(t *testing.T) {
 		},
 		{
 			"a\nb\n",
-			map[string]interface{}{},
-			map[string]interface{}{"a": "b"},
+			map[string]any{},
+			map[string]any{"a": "b"},
 		},
 
 		// nested struct
