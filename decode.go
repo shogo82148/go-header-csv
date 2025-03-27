@@ -279,6 +279,7 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 					StartLine: startLine,
 					Line:      line,
 					Column:    col,
+					Field:     k,
 					Err:       err,
 				}
 			}
