@@ -263,6 +263,21 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 			}
 		}
 		return nil
+
+	case reflect.Interface:
+		if t.NumMethod() > 0 {
+			return fmt.Errorf("headercsv: unsupported type: %s", t.String())
+		}
+		t := reflect.TypeOf(map[string]string(nil))
+		w := reflect.MakeMap(t)
+		for i, k := range dec.header {
+			if i >= len(record) {
+				break
+			}
+			w.SetMapIndex(reflect.ValueOf(k), reflect.ValueOf(record[i]))
+		}
+		v.Set(w)
+		return nil
 	}
 
 	rt := recordType(t)
@@ -338,6 +353,9 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 	case reflect.String:
 		v.SetString(field)
 	case reflect.Interface:
+		if v.NumMethod() > 0 {
+			return fmt.Errorf("headercsv: unsupported type: %s", v.Type().String())
+		}
 		v.Set(reflect.ValueOf(field))
 	default:
 		if v.CanAddr() {

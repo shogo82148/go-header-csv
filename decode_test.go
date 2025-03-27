@@ -46,7 +46,12 @@ type APtr struct {
 	B string
 }
 
+type SomeInterface interface {
+	SomeMethod()
+}
+
 func ptrstr(s string) *string { return &s }
+func ptrany(s any) *any       { return &s }
 
 type testUnmarshal int
 
@@ -300,6 +305,13 @@ func TestDecodeRecord(t *testing.T) {
 			"a\nA\n",
 			new(map[string]testUnmarshal),
 			&map[string]testUnmarshal{"a": 10},
+		},
+
+		// any
+		{
+			"a\nA\n",
+			new(any),
+			ptrany(map[string]string{"a": "A"}),
 		},
 	}
 
@@ -575,6 +587,15 @@ func TestDecodeRecord_Error(t *testing.T) {
 			t.Error("want err, but none")
 		}
 	})
+
+	t.Run("non-empty interface", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		var v SomeInterface
+		err := d.DecodeRecord(&v)
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
 }
 
 func TestDecodeAll(t *testing.T) {
@@ -666,6 +687,13 @@ func TestDecodeAll(t *testing.T) {
 			new([]map[string]testUnmarshal),
 			&[]map[string]testUnmarshal{{"a": 10}},
 		},
+
+		// any
+		{
+			"a\nA\n",
+			new([]any),
+			&[]any{map[string]string{"a": "A"}},
+		},
 	}
 
 	for _, tc := range testcases {
@@ -677,4 +705,40 @@ func TestDecodeAll(t *testing.T) {
 			t.Errorf("%#v, %T: got %#v, want %#v", tc.in, tc.out, tc.ptr, tc.out)
 		}
 	}
+}
+
+func TestDecodeAll_error(t *testing.T) {
+	t.Run("not a pointer", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		err := d.DecodeAll(123)
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("v is neither a slice nor an array", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		err := d.DecodeAll(&struct{}{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("non-empty interface for record", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		var v []SomeInterface
+		err := d.DecodeAll(&v)
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("non-empty interface for field", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		var v []map[string]SomeInterface
+		err := d.DecodeAll(&v)
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
 }
