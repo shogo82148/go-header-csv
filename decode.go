@@ -263,6 +263,18 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 			}
 		}
 		return nil
+
+	case reflect.Interface:
+		t := reflect.TypeOf(map[string]string(nil))
+		w := reflect.MakeMap(t)
+		for i, k := range dec.header {
+			if i >= len(record) {
+				break
+			}
+			w.SetMapIndex(reflect.ValueOf(k), reflect.ValueOf(record[i]))
+		}
+		v.Set(w)
+		return nil
 	}
 
 	rt := recordType(t)
