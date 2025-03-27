@@ -23,9 +23,9 @@ type DecodeError struct {
 
 func (e *DecodeError) Error() string {
 	if e.StartLine != e.Line {
-		return fmt.Sprintf("headercsv: decode error on line %d (starting at line %d), column %d, field: \"%q\": %v", e.Line, e.StartLine, e.Column, e.Field, e.Err)
+		return fmt.Sprintf("headercsv: decode error on line %d (starting at line %d), column %d, field: %q: %v", e.Line, e.StartLine, e.Column, e.Field, e.Err)
 	}
-	return fmt.Sprintf("headercsv: decode error on line %d, column %d, field \"%q\": %v", e.Line, e.Column, e.Field, e.Err)
+	return fmt.Sprintf("headercsv: decode error on line %d, column %d, field %q: %v", e.Line, e.Column, e.Field, e.Err)
 }
 
 // Unwrap returns the underlying error.
