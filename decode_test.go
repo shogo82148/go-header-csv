@@ -350,6 +350,9 @@ func TestDecodeRecord_Error(t *testing.T) {
 		if decodeErr.Column != 1 {
 			t.Errorf("got %d, want 1", decodeErr.Column)
 		}
+		if decodeErr.Field != "a" {
+			t.Errorf("got %q, want \"a\"", decodeErr.Field)
+		}
 		if decodeErr.Err == nil {
 			t.Error("want err, but none")
 		}
@@ -374,6 +377,9 @@ func TestDecodeRecord_Error(t *testing.T) {
 		if decodeErr.Column != 1 {
 			t.Errorf("got %d, want 1", decodeErr.Column)
 		}
+		if decodeErr.Field != "a" {
+			t.Errorf("got %q, want \"a\"", decodeErr.Field)
+		}
 		if decodeErr.Err == nil {
 			t.Error("want err, but none")
 		}
@@ -397,6 +403,9 @@ func TestDecodeRecord_Error(t *testing.T) {
 		}
 		if decodeErr.Column != 1 {
 			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Field != "a" {
+			t.Errorf("got %q, want \"a\"", decodeErr.Field)
 		}
 		if decodeErr.Err == nil {
 			t.Error("want err, but none")
@@ -424,6 +433,9 @@ func TestDecodeRecord_Error(t *testing.T) {
 		if decodeErr.Column != 1 {
 			t.Errorf("got %d, want 1", decodeErr.Column)
 		}
+		if decodeErr.Field != "a" {
+			t.Errorf("got %q, want \"a\"", decodeErr.Field)
+		}
 		if decodeErr.Err == nil {
 			t.Error("want err, but none")
 		}
@@ -447,6 +459,9 @@ func TestDecodeRecord_Error(t *testing.T) {
 		}
 		if decodeErr.Column != 1 {
 			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Field != "a" {
+			t.Errorf("got %q, want \"a\"", decodeErr.Field)
 		}
 		if decodeErr.Err == nil {
 			t.Error("want err, but none")
@@ -472,6 +487,9 @@ func TestDecodeRecord_Error(t *testing.T) {
 		if decodeErr.Column != 1 {
 			t.Errorf("got %d, want 1", decodeErr.Column)
 		}
+		if decodeErr.Field != "a" {
+			t.Errorf("got %q, want \"a\"", decodeErr.Field)
+		}
 		if decodeErr.Err == nil {
 			t.Error("want err, but none")
 		}
@@ -495,6 +513,9 @@ func TestDecodeRecord_Error(t *testing.T) {
 		}
 		if decodeErr.Column != 1 {
 			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Field != "a" {
+			t.Errorf("got %q, want \"a\"", decodeErr.Field)
 		}
 		if decodeErr.Err == nil {
 			t.Error("want err, but none")
@@ -520,6 +541,9 @@ func TestDecodeRecord_Error(t *testing.T) {
 		if decodeErr.Column != 1 {
 			t.Errorf("got %d, want 1", decodeErr.Column)
 		}
+		if decodeErr.Field != "a" {
+			t.Errorf("got %q, want \"a\"", decodeErr.Field)
+		}
 		if decodeErr.Err == nil {
 			t.Error("want err, but none")
 		}
@@ -543,6 +567,9 @@ func TestDecodeRecord_Error(t *testing.T) {
 		}
 		if decodeErr.Column != 1 {
 			t.Errorf("got %d, want 1", decodeErr.Column)
+		}
+		if decodeErr.Field != "a" {
+			t.Errorf("got %q, want \"a\"", decodeErr.Field)
 		}
 		if decodeErr.Err == nil {
 			t.Error("want err, but none")

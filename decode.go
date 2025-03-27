@@ -14,17 +14,18 @@ import (
 // A DecodeError is returned for decoding errors.
 // Line and column numbers are 1-indexed.
 type DecodeError struct {
-	StartLine int   // Line where the record starts
-	Line      int   // Line where the error occurred
-	Column    int   // Column (1-based byte index) where the error occurred
-	Err       error // The actual error
+	StartLine int    // Line where the record starts
+	Line      int    // Line where the error occurred
+	Column    int    // Column (1-based byte index) where the error occurred
+	Field     string // Field name where the error occurred
+	Err       error  // The actual error
 }
 
 func (e *DecodeError) Error() string {
 	if e.StartLine != e.Line {
-		return fmt.Sprintf("headercsv: decode error on line %d (starting at line %d), column %d: %v", e.Line, e.StartLine, e.Column, e.Err)
+		return fmt.Sprintf("headercsv: decode error on line %d (starting at line %d), column %d, field: %q: %v", e.Line, e.StartLine, e.Column, e.Field, e.Err)
 	}
-	return fmt.Sprintf("headercsv: decode error on line %d, column %d: %v", e.Line, e.Column, e.Err)
+	return fmt.Sprintf("headercsv: decode error on line %d, column %d, field %q: %v", e.Line, e.Column, e.Field, e.Err)
 }
 
 // Unwrap returns the underlying error.
@@ -212,6 +213,7 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 					StartLine: startLine,
 					Line:      line,
 					Column:    col,
+					Field:     k,
 					Err:       err,
 				}
 			}
@@ -234,6 +236,7 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 					StartLine: startLine,
 					Line:      line,
 					Column:    col,
+					Field:     k,
 					Err:       err,
 				}
 			}
@@ -254,6 +257,7 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 					StartLine: startLine,
 					Line:      line,
 					Column:    col,
+					Field:     k,
 					Err:       err,
 				}
 			}
@@ -275,6 +279,7 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 					StartLine: startLine,
 					Line:      line,
 					Column:    col,
+					Field:     k,
 					Err:       err,
 				}
 			}
