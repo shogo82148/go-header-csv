@@ -46,6 +46,10 @@ type APtr struct {
 	B string
 }
 
+type SomeInterface interface {
+	SomeMethod()
+}
+
 func ptrstr(s string) *string { return &s }
 func ptrany(s any) *any       { return &s }
 
@@ -583,6 +587,15 @@ func TestDecodeRecord_Error(t *testing.T) {
 			t.Error("want err, but none")
 		}
 	})
+
+	t.Run("non-empty interface", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		var v SomeInterface
+		err := d.DecodeRecord(&v)
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
 }
 
 func TestDecodeAll(t *testing.T) {
@@ -706,6 +719,24 @@ func TestDecodeAll_error(t *testing.T) {
 	t.Run("v is neither a slice nor an array", func(t *testing.T) {
 		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
 		err := d.DecodeAll(&struct{}{})
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("non-empty interface for record", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		var v []SomeInterface
+		err := d.DecodeAll(&v)
+		if err == nil {
+			t.Error("want err, but none")
+		}
+	})
+
+	t.Run("non-empty interface for field", func(t *testing.T) {
+		d := NewDecoder(bytes.NewBufferString("a\nb\n"))
+		var v []map[string]SomeInterface
+		err := d.DecodeAll(&v)
 		if err == nil {
 			t.Error("want err, but none")
 		}
