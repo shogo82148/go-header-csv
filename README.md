@@ -63,3 +63,9 @@ func ExampleEncoder_EncodeAll() {
 	// Ed,Go fmt yourself!
 }
 ```
+
+## Related Works
+
+- [gocarina/gocsv](https://github.com/gocarina/gocsv)
+- [jszwec/csvutil](https://github.com/jszwec/csvutil)
+- [yunabe/easycsv](https://github.com/yunabe/easycsv)
