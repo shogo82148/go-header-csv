@@ -65,7 +65,7 @@ func (dec *Decoder) Decode(v any) error {
 
 	rv := reflect.ValueOf(v)
 
-	if rv.Kind() == reflect.Ptr && rv.Elem().Kind() == reflect.Slice {
+	if rv.Kind() == reflect.Pointer && rv.Elem().Kind() == reflect.Slice {
 		elem := reflect.MakeSlice(rv.Elem().Type(), 0, 4)
 		for {
 			ev := reflect.New(elem.Type().Elem())
@@ -77,7 +77,7 @@ func (dec *Decoder) Decode(v any) error {
 		}
 	}
 
-	if rv.Kind() == reflect.Ptr && rv.Elem().Kind() == reflect.Array {
+	if rv.Kind() == reflect.Pointer && rv.Elem().Kind() == reflect.Array {
 		elem := rv.Elem()
 		l := elem.Len()
 		for i := 0; i < l; i++ {
@@ -95,7 +95,7 @@ func (dec *Decoder) Decode(v any) error {
 // DecodeRecord reads the next CSV record from its input and stores it in the value pointed to by v.
 func (dec *Decoder) DecodeRecord(v any) error {
 	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr {
+	if rv.Kind() != reflect.Pointer {
 		return errors.New("headercsv: v is not a pointer")
 	}
 
@@ -114,7 +114,7 @@ func (dec *Decoder) DecodeRecord(v any) error {
 // v must be a pinter to a slice or a pointer to an array.
 func (dec *Decoder) DecodeAll(v any) error {
 	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr {
+	if rv.Kind() != reflect.Pointer {
 		return errors.New("headercsv: v is not a pointer")
 	}
 
@@ -305,7 +305,7 @@ func (dec *Decoder) decodeRecord(v reflect.Value) error {
 }
 
 func (dec *Decoder) decodeField(v reflect.Value, field string) error {
-	if field == "" && v.Kind() == reflect.Ptr {
+	if field == "" && v.Kind() == reflect.Pointer {
 		v.Set(reflect.Zero(v.Type()))
 		return nil
 	}
@@ -366,11 +366,11 @@ func (dec *Decoder) decodeField(v reflect.Value, field string) error {
 }
 
 func (dec *Decoder) indirect(v reflect.Value) reflect.Value {
-	if v.Kind() != reflect.Ptr && v.Type().Name() != "" && v.CanAddr() {
+	if v.Kind() != reflect.Pointer && v.Type().Name() != "" && v.CanAddr() {
 		v = v.Addr()
 	}
 	for {
-		if v.Kind() != reflect.Ptr {
+		if v.Kind() != reflect.Pointer {
 			break
 		}
 		if v.IsNil() {
@@ -382,11 +382,11 @@ func (dec *Decoder) indirect(v reflect.Value) reflect.Value {
 }
 
 func (dec *Decoder) indirectField(v reflect.Value) (encoding.TextUnmarshaler, reflect.Value) {
-	if v.Kind() != reflect.Ptr && v.Type().Name() != "" && v.CanAddr() {
+	if v.Kind() != reflect.Pointer && v.Type().Name() != "" && v.CanAddr() {
 		v = v.Addr()
 	}
 	for {
-		if v.Kind() != reflect.Ptr {
+		if v.Kind() != reflect.Pointer {
 			break
 		}
 		if v.IsNil() {
