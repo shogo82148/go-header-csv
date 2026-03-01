@@ -154,7 +154,7 @@ func (enc *Encoder) encodeField(v reflect.Value, opt *field) (string, error) {
 		return strconv.FormatFloat(v.Float(), 'g', -1, 32), nil
 	case reflect.Float64:
 		return strconv.FormatFloat(v.Float(), 'g', -1, 64), nil
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if v.IsNil() {
 			return "null", nil
 		}
@@ -214,7 +214,7 @@ func newRecordType(t reflect.Type) recordInterface {
 		return newMapRecordType(t)
 	case reflect.Struct:
 		return newStructRecordType(t)
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return newPtrRecordType(t)
 	case reflect.Slice, reflect.Array:
 		return newSliceRecordType(t)
