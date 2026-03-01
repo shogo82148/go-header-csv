@@ -369,10 +369,7 @@ func (dec *Decoder) indirect(v reflect.Value) reflect.Value {
 	if v.Kind() != reflect.Pointer && v.Type().Name() != "" && v.CanAddr() {
 		v = v.Addr()
 	}
-	for {
-		if v.Kind() != reflect.Pointer {
-			break
-		}
+	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			v.Set(reflect.New(v.Type().Elem()))
 		}
@@ -385,10 +382,7 @@ func (dec *Decoder) indirectField(v reflect.Value) (encoding.TextUnmarshaler, re
 	if v.Kind() != reflect.Pointer && v.Type().Name() != "" && v.CanAddr() {
 		v = v.Addr()
 	}
-	for {
-		if v.Kind() != reflect.Pointer {
-			break
-		}
+	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			v.Set(reflect.New(v.Type().Elem()))
 		}
